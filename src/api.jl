@@ -37,6 +37,7 @@ typealias Layout     Cint
 typealias ResultLocation   Cint
 typealias ResultTransposed Cint
 
+
 module clfftStatus
     import OpenCL
 
