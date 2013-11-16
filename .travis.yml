@@ -32,8 +32,8 @@ script:
 # - ls -Rla package
 # Run a simple test to validate that the build works; CPU device in a VM-lcxxrt
   - cd package/bin
-  - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/package/lib64:${LD_LIBRARY_PATH}
-  - ls -l ${TRAVIS_BUILD_DIR}/bin/clFFT/package/lib64
+  - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/library:${LD_LIBRARY_PATH}
+  - ls -l ${TRAVIS_BUILD_DIR}/bin/clFFT/library
   - ./Client -i
   - cd ${TRAVIS_BUILD_DIR}
   - julia -e 'Pkg.init(); Pkg.clone("OpenCL")'
