@@ -3,11 +3,39 @@ compiler:
   - clang
 notifications:
   email: false
+
 before_install:
   - sudo add-apt-repository ppa:staticfloat/julia-deps -y
   - sudo add-apt-repository ppa:staticfloat/julianightlies -y
   - sudo apt-get update -qq -y
+  - sudo apt-get install -qq fglrx opencl-headers libboost-program-options-dev libfftw3-dev libgtest-dev
   - sudo apt-get install libpcre3-dev julia -y
+
+install:
+  - mkdir -p bin/gTest
+  - cd bin/gTest
+  - cmake -DCMAKE_BUILD_TYPE=Release /usr/src/gtest
+  - make
+  - sudo mv libg* /usr/lib
+
+before_script:
+  - cd ${TRAVIS_BUILD_DIR}
+  - mkdir -p bin/clFFT
+  - cd bin/clFFT
+  - cmake -DBoost_NO_SYSTEM_PATHS=OFF ../../src
+  
 script:
+  - make install
+# - ls -Rla package
+# Run a simple test to validate that the build works; CPU device in a VM
+  - cd package/bin
+  - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/package/lib64:${LD_LIBRARY_PATH}
+  - ./Client -i
+  
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("CLFFT"))`); Pkg.pin("CLFFT"); Pkg.resolve()'
   - julia -e 'using CLFFT; @assert isdefined(:CLFFT); @assert typeof(CLFFT) === Module'
+
+after_success:
+  - cd ${TRAVIS_BUILD_DIR}/bin/clFFT
+  - make package
+
