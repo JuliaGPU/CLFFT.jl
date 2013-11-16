@@ -4,7 +4,7 @@ import OpenCL
 const cl = OpenCL
 
 @unix_only begin
-const libopencl = "clFFT"
+const libopencl = "libclFFT"
 end 
 
 macro clfft(func, arg_types)
