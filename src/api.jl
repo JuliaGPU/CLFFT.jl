@@ -24,16 +24,120 @@ immutable SetupData
     debug_flags::cl.CL_ulong
 end
 
-#TODO: enums
 typealias PlanHandle Csize_t
 typealias Callback   Any 
 typealias UserData   Ptr{Void}
+
 typealias Precision  Cint
 typealias Dim        Cint
 typealias Direction  Cint
 typealias Layout     Cint 
 typealias ResultLocation   Cint
 typealias ResultTransposed Cint
+
+module clfftStatus
+    const INVALID_GLOBAL_WORK_SIZE          = cl.CL_INVALID_GLOBAL_WORK_SIZE
+    const INVALID_MIP_LEVEL                 = cl.CL_INVALID_MIP_LEVEL
+    const INVALID_BUFFER_SIZE               = cl.CL_INVALID_BUFFER_SIZE
+    const INVALID_GL_OBJECT                 = cl.CL_INVALID_GL_OBJECT
+    const INVALID_OPERATION                 = cl.CL_INVALID_OPERATION
+    const INVALID_EVENT                     = cl.CL_INVALID_EVENT
+    const INVALID_EVENT_WAIT_LIST           = cl.CL_INVALID_EVENT_WAIT_LIST,
+    const INVALID_GLOBAL_OFFSET             = cl.CL_INVALID_GLOBAL_OFFSET,
+    const INVALID_WORK_ITEM_SIZE            = cl.CL_INVALID_WORK_ITEM_SIZE
+    const INVALID_WORK_GROUP_SIZE           = cl.CL_INVALID_WORK_GROUP_SIZE
+    const INVALID_WORK_DIMENSION            = cl.CL_INVALID_WORK_DIMENSION
+    const INVALID_KERNEL_ARGS               = cl.CL_INVALID_KERNEL_ARGS
+    const INVALID_ARG_SIZE                  = cl.CL_INVALID_ARG_SIZE
+    const INVALID_ARG_VALUE                 = cl.CL_INVALID_ARG_VALUE
+    const INVALID_ARG_INDEX                 = cl.CL_INVALID_ARG_INDEX
+    const INVALID_KERNEL                    = cl.CL_INVALID_KERNEL
+    const INVALID_KERNEL_DEFINITION         = cl.CL_INVALID_KERNEL_DEFINITION
+    const INVALID_KERNEL_NAME               = cl.CL_INVALID_KERNEL_NAME
+    const INVALID_PROGRAM_EXECUTABLE        = cl.CL_INVALID_PROGRAM_EXECUTABLE
+    const INVALID_PROGRAM                   = cl.CL_INVALID_PROGRAM
+    const INVALID_BUILD_OPTIONS             = cl.CL_INVALID_BUILD_OPTIONS
+    const INVALID_BINARY                    = cl.CL_INVALID_BINARY
+    const INVALID_SAMPLER                   = cl.CL_INVALID_SAMPLER
+    const INVALID_IMAGE_SIZE                = cl.CL_INVALID_IMAGE_SIZE
+    const INVALID_IMAGE_FORMAT_DESCRIPTOR   = cl.CL_INVALID_IMAGE_FORMAT_DESCRIPTOR
+    const INVALID_MEM_OBJECT                = cl.CL_INVALID_MEM_OBJECT
+    const INVALID_HOST_PTR                  = cl.CL_INVALID_HOST_PTR
+    const INVALID_COMMAND_QUEUE             = cl.CL_INVALID_COMMAND_QUEUE
+    const INVALID_QUEUE_PROPERTIES          = cl.CL_INVALID_QUEUE_PROPERTIES
+    const INVALID_CONTEXT                   = cl.CL_INVALID_CONTEXT
+    const INVALID_DEVICE                    = cl.CL_INVALID_DEVICE
+    const INVALID_PLATFORM                  = cl.CL_INVALID_PLATFORM
+    const INVALID_DEVICE_TYPE               = cl.CL_INVALID_DEVICE_TYPE
+    const INVALID_VALUE                     = cl.CL_INVALID_VALUE
+    const MAP_FAILURE                       = cl.CL_MAP_FAILURE
+    const BUILD_PROGRAM_FAILURE             = cl.CL_BUILD_PROGRAM_FAILURE
+    const IMAGE_FORMAT_NOT_SUPPORTED        = cl.CL_IMAGE_FORMAT_NOT_SUPPORTED
+    const IMAGE_FORMAT_MISMATCH             = cl.CL_IMAGE_FORMAT_MISMATCH
+    const MEM_COPY_OVERLAP                  = cl.CL_MEM_COPY_OVERLAP
+    const PROFILING_INFO_NOT_AVAILABLE      = cl.CL_PROFILING_INFO_NOT_AVAILABLE
+    const OUT_OF_HOST_MEMORY                = cl.CL_OUT_OF_HOST_MEMORY
+    const OUT_OF_RESOURCES                  = cl.CL_OUT_OF_RESOURCES
+    const MEM_OBJECT_ALLOCATION_FAILURE     = cl.CL_MEM_OBJECT_ALLOCATION_FAILURE
+    const COMPILER_NOT_AVAILABLE            = cl.CL_COMPILER_NOT_AVAILABLE
+    const DEVICE_NOT_AVAILABLE              = cl.CL_DEVICE_NOT_AVAILABLE
+    const DEVICE_NOT_FOUND                  = cl.CL_DEVICE_NOT_FOUND
+    const SUCCESS                           = cl.CL_SUCCESS
+    
+    const BUGCHECK                  = cl.cl_int(4*1024)
+    const NOTIMPLEMENTED            = cl.cl_int(4*1024+1)  # Functionality is not implemented yet.
+    const TRANSPOSED_NOTIMPLEMENTED = cl.cl_int(4*1024+2)  # Transposed functionality is not implemented for this transformation.
+    const FILE_NOT_FOUND,           = cl.cl_int(4*1024+3)  # Tried to open an existing file on the host system, but failed.
+    const FILE_CREATE_FAILURE,      = cl.cl_int(4*1024+4)  # Tried to create a file on the host system, but failed.
+    const VERSION_MISMATCH,         = cl.cl_int(4*1024+5)  # Version conflict between client and library.
+    const INVALID_PLAN,             = cl.cl_int(4*1024+6)  # Requested plan could not be found. 
+    const DEVICE_NO_DOUBLE,         = cl.cl_int(4*1024+7)  # Double precision not supported on this device. 
+    const ENDSTATUS                 = cl.cl_int(4*1024+8)  # This value will always be last, and marks the length of clfftStatus. 
+end
+
+module clfftDim
+    const _1D = cint(1) # 1 Dimensional FFT transform (default). 
+    const _2D = cint(2) # 2 Dimensional FFT transform.
+    const _3D = cint(3) # 3 Dimensional FFT transform.
+end
+
+module clfftLayout
+    const COMPLEX_INTERLEAVED   = cint(1) # An array of complex numbers, with real and imaginary components together (default).
+    const COMPLEX_PLANAR        = cint(2) # Arrays of real componets and arrays of imaginary components that have been seperated out.
+    const HERMITIAN_INTERLEAVED = cint(3) # Compressed form of complex numbers; complex-conjugates not stored, real and imaginary components in same array.
+    const HERMITIAN_PLANAR      = cint(4) # Compressed form of complex numbers; complex-conjugates not stored, real and imaginary components in separate arrays.
+    const REAL                  = cint(5) # An array of real numbers, with no corresponding imaginary components.
+    const ENDLAYOUT             = cint(6) # This value will always be last, and marks the length of clfftLayout.
+end
+
+module clfftPrecision
+    const SINGLE       = cint(1) # An array of complex numbers, with real and imaginary components as floats (default).
+    const DOUBLE       = cint(2) # An array of complex numbers, with real and imaginary components as doubles.
+    const SINGLE_FAST  = cint(3) # Faster implementation preferred.
+    const DOUBLE_FAST  = cint(4) # Faster implementation preferred.
+    const ENDPRECISION = cint(5) # This value will always be last, and marks the length of clfftPrecision.
+end 
+
+module clfftDirection
+    const FORWARD      = cint(-1) # FFT transform from the time to the frequency domain. 
+    const BACKWARD     = cint(1)  # FFT transform from the frequency to the time domain
+    const MINUS        = cint(-1) # Alias for the forward transform. 
+    const PLUS         = cint(1)  # Alias for the backward transform. 
+    const ENDDIRECTION = cint(2)  # This value will always be last, and marks the length of clfftDirection. 
+end
+
+module clfftResultLocation
+    const INPLACE      = cint(1) # The input and output buffers are the same (default). 
+    const OUTOFPLACE   = cint(2) # Seperate input and output buffers.
+    const ENDPLACE     = cint(3) # This value will always be last, and marks the length of clfftPlaceness. 
+end
+
+module clfftResultTransposed
+    const NOTRANSPOSE   = cint(1) # The results are returned in the original preserved order (default) 
+    const TRANSPOSED    = cint(2) # The result is transposed where transpose kernel is supported (possibly faster) 
+    const ENDTRANSPOSED = cint(3) # This value will always be last, and marks the length of clfftResultTransposed 
+end
+
 
 # @brief Initialize internal FFT resources.
 # @details AMD's FFT implementation caches kernels, programs and buffers for its internal use.
