@@ -30,8 +30,6 @@ before_script:
   
 script:
   - make install
-# - ls -Rla package
-# Run a simple test to validate that the build works; CPU device in a VM-lcxxrt
   - cd package/bin
   - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/library:${LD_LIBRARY_PATH}
   - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/statTimer:${LD_LIBRARY_PATH}
