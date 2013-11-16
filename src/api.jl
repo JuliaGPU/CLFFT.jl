@@ -4,15 +4,15 @@ import OpenCL
 const cl = OpenCL
 
 @unix_only begin
-const libopencl = "libclFFT"
+const libclfft = "libclFFT"
 end 
 
 macro clfft(func, arg_types)
     local args_in  = Symbol[symbol("arg$i::$T")
                             for (i, T) in enumerate(arg_types.args)]
     local funcname = symbol("clfft$func")
-    quote
-        $(esc(funcname))($(args_in...)) = ccall(($(string(funcname)), libclfft),
+    @eval begin
+        $(funcname)($(args_in...)) = ccall(($(string(funcname)), libclfft),
                                                  cl.CL_int, #clfftStatus
                                                  $arg_types,
                                                  $(args_in...))
