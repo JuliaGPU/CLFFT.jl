@@ -26,6 +26,7 @@ immutable SetupData
     debug_flags::cl.CL_ulong
 end
 
+
 typealias PlanHandle Csize_t
 typealias Callback   Any 
 typealias UserData   Ptr{Void}
