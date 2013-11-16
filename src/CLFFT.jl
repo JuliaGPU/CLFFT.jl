@@ -1,5 +1,5 @@
 module CLFFT
 
-# package code goes here
+include("api.jl")
 
 end # module
