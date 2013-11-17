@@ -239,7 +239,7 @@ end
 # @param[in] user_data Passed as an argument when pfn_notify is called.
 #            Currently, this parameter MUST be NULL or nullptr.
 # @return Enum describing error condition; superset of OpenCL error codes
-@clfft(BakePlan, (PlanHandle, cl.CL_uint, Ptr{cl.CL_command_queue}, CallBack, UserData))
+@clfft(BakePlan, (PlanHandle, cl.CL_uint, Ptr{cl.CL_command_queue}, Callback, UserData))
 
 # @brief Release the resources of a plan.
 # @details A plan may include kernels, programs and buffers associated with it that consume memory. When a plan  is not needed anymore, the client should release the plan.

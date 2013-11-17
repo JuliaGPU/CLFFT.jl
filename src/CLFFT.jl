@@ -43,7 +43,8 @@ type Plan{T<:clfftNumber}
         finalizer(p, x -> begin 
             if x.id != 0
                 println("destroying plan $(x.id)")
-                api.clfftDestroyPlan(x.id)
+                #TODO: this segfaults the julia interpreter
+                #api.clfftDestroyPlan(x.id)
             end
             x.id = 0
         end)
@@ -115,14 +116,71 @@ end
 
 set_result(p::Plan, v::Symbol) = begin
     if v == :inplace
-        api.clfftSetLayout(p.id, api.clfftLayout.INPLACE)
+        api.clfftSetResultLocation(p.id, api.clfftResultLocation.INPLACE)
     elseif v == :outofplace
-        api.clfftSetLayout(p.id, api.clfftLayout.OUTOFPLACE)
+        api.clfftSetResultLocation(p.id, api.clfftResultLocation.OUTOFPLACE)
     else
         throw(ArgumentError("set_result must be :inplace or :outofplace"))
     end
 end
 
-#    err = clfftSetResultLocation(planHandle, CLFFT_INPLACE);
+bake(p::Plan, qs::Vector{cl.CmdQueue}) = begin
+    nqueues = length(qs)
+    q_ids = [q.id for q in qs]
+    # TODO: callback
+    api.clfftBakePlan(p.id, uint32(nqueues), q_ids, C_NULL, C_NULL)
+end
+bake(p::Plan, q::cl.CmdQueue) = bake(p, [q])
 
+function enqueue_transform{T<:clfftNumber}(p::Plan,
+                                           dir::Symbol,
+                                           qs::Vector{cl.CmdQueue},
+                                           in::cl.Buffer{T},
+                                           out::Union(Nothing,cl.Buffer{T});
+                                           wait_for::Union(Nothing,Vector{cl.Event})=nothing,
+                                           tmp::Union(Nothing,cl.Buffer{T})=nothing)
+    FORWARD  = api.clfftDirection.FORWARD
+    BACKWARD = api.clfftDirection.BACKWARD
+    if dir != :forward && dir != :backward
+        throw(ArgumentError("Unknown direction $dir"))
+    end
+    
+    q_ids = [q.id for q in qs]
+    in_buff_ids  = [in.id]
+    
+    out_buff_ids = C_NULL
+    if out != nothing
+        out_buff_ids = [out.id]
+    end 
+
+    nevts = 0
+    evt_ids = C_NULL 
+    if wait_for != nothing
+        nevts = length(wait_for)
+        evt_ids = [evt.id for evt in wait_for]
+    end
+
+    nqueues = length(q_ids)
+    out_evts = Array(cl.CL_event, nqueues)
+    
+    tmp_buffer = C_NULL
+    if tmp != nothing
+        tmp_buff_id = [tmp.id]
+    end
+
+    api.clfftEnqueueTransform(p.id,
+                              dir == :forward ? FORWARD : BACKWARD,
+                              uint32(nqueues),
+                              q_ids,
+                              uint32(nevts),
+                              evt_ids,
+                              out_evts,
+                              in_buff_ids,
+                              out_buff_ids,
+                              tmp_buffer)
+
+    return [cl.Event(e_id) for e_id in out_evts]
+end
+
+        
 end # module
