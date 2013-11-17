@@ -19,11 +19,28 @@ macro clfft(func, arg_types)
     end
 end
 
-immutable SetupData
+type SetupData
     major::cl.CL_uint
     minor::cl.CL_uint
     patch::cl.CL_uint
     debug_flags::cl.CL_ulong
+
+    function SetupData(major::Integer,
+                       minor::Integer, 
+                       patch::Integer, 
+                       debug_flags::Integer)
+        d = new(cl.cl_uint(major), 
+                cl.cl_uint(minor), 
+                cl.cl_uint(patch), 
+                cl.cl_ulong(debug_flags))
+        setup = [d]
+        error = clfftSetup(setup)
+        if error != clfftStatus.SUCCESS
+            error("Failed to setup CLFFT Library")
+        end
+        finalizer(d, x -> clfftTeardown())
+        return d
+    end
 end
 
 
@@ -37,6 +54,9 @@ typealias Direction  Cint
 typealias Layout     Cint 
 typealias ResultLocation   Cint
 typealias ResultTransposed Cint
+
+clfft_dim(x) = convert(Dim, x)
+clfft_direction(x) = convert(Direction, x)
 
 module clfftStatus
     import OpenCL
@@ -145,6 +165,12 @@ module clfftResultTransposed
     const ENDTRANSPOSED = int32(3) # This value will always be last, and marks the length of clfftResultTransposed 
 end
 
+# @brief Initialize an clfftSetupData struct for the client
+# @details clfftSetupData is passed to clfftSetup to control behavior of the FFT runtime
+# @param[out] setupData Data structure is cleared, 
+#             initialized with version information and default values
+# @return Enum describing error condition; superset of OpenCL error codes
+@clfft(InitSetupData, (Ptr{SetupData},)) 
 
 # @brief Initialize internal FFT resources.
 # @details AMD's FFT implementation caches kernels, programs and buffers for its internal use.
@@ -212,8 +238,7 @@ end
 @clfft(BakePlan, (PlanHandle, cl.CL_uint, Ptr{cl.CL_command_queue}, CallBack, UserData))
 
 # @brief Release the resources of a plan.
-# @details A plan may include kernels, programs and buffers associated with it that consume memory. When a plan
-# is not needed anymore, the client should release the plan.
+# @details A plan may include kernels, programs and buffers associated with it that consume memory. When a plan  is not needed anymore, the client should release the plan.
 # @param[in,out] plHandle Handle to a plan previously created
 # @return Enum describing error condition; superset of OpenCL error codes
 @clfft(DestroyPlan, (Ptr{PlanHandle},))
