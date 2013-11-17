@@ -33,6 +33,7 @@ facts("Example FFT") do
     p = clfft.Plan(Complex64, ctx, size(X))
     clfft.set_layout(p, :interleaved, :interleaved)
     clfft.set_result(p, :inplace)
+    @fact clfft.context(p) => ctx
 
     clfft.bake(p, queue) 
     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
