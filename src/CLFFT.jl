@@ -174,7 +174,7 @@ set_result(p::Plan, v::Symbol) = begin
     end
 end
 
-scaling_factor(p::Plan, dir::symbol) = begin
+scaling_factor(p::Plan, dir::Symbol) = begin
     res = Cint[0]
     d::Cint
     if dir == :forward
@@ -189,7 +189,7 @@ scaling_factor(p::Plan, dir::symbol) = begin
     return scale[1]
 end
 
-set_scaling_factor(p::Plan, dir::symbol, f::FloatingPoint) = begin
+set_scaling_factor(p::Plan, dir::Symbol, f::FloatingPoint) = begin
     if dir == :forward
         d = int32(-1)
     elseif d == :backward
@@ -200,7 +200,7 @@ set_scaling_factor(p::Plan, dir::symbol, f::FloatingPoint) = begin
     api.clfftsetPlanScale(p.id, d, float32(f))
 end
 
-set_batchsize(p:Plan, n::Integer) = begin 
+set_batchsize(p::Plan, n::Integer) = begin 
     @assert n > 0
     api.clfftSetPlanBatchSize(p.id, convert(Csize_t, n))
 end
@@ -222,7 +222,7 @@ dim(p::Plan) = begin
     return int(res[1])
 end
 
-set_length(p::Plan, dims::Dims) = begin
+set_lengths(p::Plan, dims::Dims) = begin
     ndim = length(dims)
     @assert ndim <= 3
     nd = Array(Csize_t, ndim)
@@ -232,7 +232,7 @@ set_length(p::Plan, dims::Dims) = begin
     api.clfftSetPlanLength(p.id, int32(ndim), nd)
 end
 
-length(p::Plan) = begin
+lengths(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
     api.clfftGetPlanLength(p.id, int32(d), res)
