@@ -36,7 +36,7 @@ type SetupData
         setup = [d]
         println("setting up...")
         error = clfftSetup(setup)
-        if error != clfftStatus.SUCCESS
+        if error != CLFFT_SUCCESS
             error("Failed to setup CLFFT Library")
         end
         finalizer(d, x -> begin
@@ -62,113 +62,90 @@ typealias ResultTransposed Cint
 clfft_dim(x) = convert(Dim, x)
 clfft_direction(x) = convert(Direction, x)
 
-module clfftStatus
-    import OpenCL
-
-    const INVALID_GLOBAL_WORK_SIZE          = OpenCL.CL_INVALID_GLOBAL_WORK_SIZE
-    const INVALID_MIP_LEVEL                 = OpenCL.CL_INVALID_MIP_LEVEL
-    const INVALID_BUFFER_SIZE               = OpenCL.CL_INVALID_BUFFER_SIZE
-    const INVALID_GL_OBJECT                 = OpenCL.CL_INVALID_GL_OBJECT
-    const INVALID_OPERATION                 = OpenCL.CL_INVALID_OPERATION
-    const INVALID_EVENT                     = OpenCL.CL_INVALID_EVENT
-    const INVALID_EVENT_WAIT_LIST           = OpenCL.CL_INVALID_EVENT_WAIT_LIST,
-    const INVALID_GLOBAL_OFFSET             = OpenCL.CL_INVALID_GLOBAL_OFFSET,
-    const INVALID_WORK_ITEM_SIZE            = OpenCL.CL_INVALID_WORK_ITEM_SIZE
-    const INVALID_WORK_GROUP_SIZE           = OpenCL.CL_INVALID_WORK_GROUP_SIZE
-    const INVALID_WORK_DIMENSION            = OpenCL.CL_INVALID_WORK_DIMENSION
-    const INVALID_KERNEL_ARGS               = OpenCL.CL_INVALID_KERNEL_ARGS
-    const INVALID_ARG_SIZE                  = OpenCL.CL_INVALID_ARG_SIZE
-    const INVALID_ARG_VALUE                 = OpenCL.CL_INVALID_ARG_VALUE
-    const INVALID_ARG_INDEX                 = OpenCL.CL_INVALID_ARG_INDEX
-    const INVALID_KERNEL                    = OpenCL.CL_INVALID_KERNEL
-    const INVALID_KERNEL_DEFINITION         = OpenCL.CL_INVALID_KERNEL_DEFINITION
-    const INVALID_KERNEL_NAME               = OpenCL.CL_INVALID_KERNEL_NAME
-    const INVALID_PROGRAM_EXECUTABLE        = OpenCL.CL_INVALID_PROGRAM_EXECUTABLE
-    const INVALID_PROGRAM                   = OpenCL.CL_INVALID_PROGRAM
-    const INVALID_BUILD_OPTIONS             = OpenCL.CL_INVALID_BUILD_OPTIONS
-    const INVALID_BINARY                    = OpenCL.CL_INVALID_BINARY
-    const INVALID_SAMPLER                   = OpenCL.CL_INVALID_SAMPLER
-    const INVALID_IMAGE_SIZE                = OpenCL.CL_INVALID_IMAGE_SIZE
-    const INVALID_IMAGE_FORMAT_DESCRIPTOR   = OpenCL.CL_INVALID_IMAGE_FORMAT_DESCRIPTOR
-    const INVALID_MEM_OBJECT                = OpenCL.CL_INVALID_MEM_OBJECT
-    const INVALID_HOST_PTR                  = OpenCL.CL_INVALID_HOST_PTR
-    const INVALID_COMMAND_QUEUE             = OpenCL.CL_INVALID_COMMAND_QUEUE
-    const INVALID_QUEUE_PROPERTIES          = OpenCL.CL_INVALID_QUEUE_PROPERTIES
-    const INVALID_CONTEXT                   = OpenCL.CL_INVALID_CONTEXT
-    const INVALID_DEVICE                    = OpenCL.CL_INVALID_DEVICE
-    const INVALID_PLATFORM                  = OpenCL.CL_INVALID_PLATFORM
-    const INVALID_DEVICE_TYPE               = OpenCL.CL_INVALID_DEVICE_TYPE
-    const INVALID_VALUE                     = OpenCL.CL_INVALID_VALUE
-    const MAP_FAILURE                       = OpenCL.CL_MAP_FAILURE
-    const BUILD_PROGRAM_FAILURE             = OpenCL.CL_BUILD_PROGRAM_FAILURE
-    const IMAGE_FORMAT_NOT_SUPPORTED        = OpenCL.CL_IMAGE_FORMAT_NOT_SUPPORTED
-    const IMAGE_FORMAT_MISMATCH             = OpenCL.CL_IMAGE_FORMAT_MISMATCH
-    const MEM_COPY_OVERLAP                  = OpenCL.CL_MEM_COPY_OVERLAP
-    const PROFILING_INFO_NOT_AVAILABLE      = OpenCL.CL_PROFILING_INFO_NOT_AVAILABLE
-    const OUT_OF_HOST_MEMORY                = OpenCL.CL_OUT_OF_HOST_MEMORY
-    const OUT_OF_RESOURCES                  = OpenCL.CL_OUT_OF_RESOURCES
-    const MEM_OBJECT_ALLOCATION_FAILURE     = OpenCL.CL_MEM_OBJECT_ALLOCATION_FAILURE
-    const COMPILER_NOT_AVAILABLE            = OpenCL.CL_COMPILER_NOT_AVAILABLE
-    const DEVICE_NOT_AVAILABLE              = OpenCL.CL_DEVICE_NOT_AVAILABLE
-    const DEVICE_NOT_FOUND                  = OpenCL.CL_DEVICE_NOT_FOUND
-    const SUCCESS                           = OpenCL.CL_SUCCESS
+# ERROR CODES
+const CLFFT_INVALID_GLOBAL_WORK_SIZE          = OpenCL.CL_INVALID_GLOBAL_WORK_SIZE
+const CLFFT_INVALID_MIP_LEVEL                 = OpenCL.CL_INVALID_MIP_LEVEL
+const CLFFT_INVALID_BUFFER_SIZE               = OpenCL.CL_INVALID_BUFFER_SIZE
+const CLFFT_INVALID_GL_OBJECT                 = OpenCL.CL_INVALID_GL_OBJECT
+const CLFFT_INVALID_OPERATION                 = OpenCL.CL_INVALID_OPERATION
+const CLFFT_INVALID_EVENT                     = OpenCL.CL_INVALID_EVENT
+const CLFFT_INVALID_EVENT_WAIT_LIST           = OpenCL.CL_INVALID_EVENT_WAIT_LIST,
+const CLFFT_INVALID_GLOBAL_OFFSET             = OpenCL.CL_INVALID_GLOBAL_OFFSET,
+const CLFFT_INVALID_WORK_ITEM_SIZE            = OpenCL.CL_INVALID_WORK_ITEM_SIZE
+const CLFFT_INVALID_WORK_GROUP_SIZE           = OpenCL.CL_INVALID_WORK_GROUP_SIZE
+const CLFFT_INVALID_WORK_DIMENSION            = OpenCL.CL_INVALID_WORK_DIMENSION
+const CLFFT_INVALID_KERNEL_ARGS               = OpenCL.CL_INVALID_KERNEL_ARGS
+const CLFFT_INVALID_ARG_SIZE                  = OpenCL.CL_INVALID_ARG_SIZE
+const CLFFT_INVALID_ARG_VALUE                 = OpenCL.CL_INVALID_ARG_VALUE
+const CLFFT_INVALID_ARG_INDEX                 = OpenCL.CL_INVALID_ARG_INDEX
+const CLFFT_INVALID_KERNEL                    = OpenCL.CL_INVALID_KERNEL
+const CLFFT_INVALID_KERNEL_DEFINITION         = OpenCL.CL_INVALID_KERNEL_DEFINITION
+const CLFFT_INVALID_KERNEL_NAME               = OpenCL.CL_INVALID_KERNEL_NAME
+const CLFFT_INVALID_PROGRAM_EXECUTABLE        = OpenCL.CL_INVALID_PROGRAM_EXECUTABLE
+const CLFFT_INVALID_PROGRAM                   = OpenCL.CL_INVALID_PROGRAM
+const CLFFT_INVALID_BUILD_OPTIONS             = OpenCL.CL_INVALID_BUILD_OPTIONS
+const CLFFT_INVALID_BINARY                    = OpenCL.CL_INVALID_BINARY
+const CLFFT_INVALID_SAMPLER                   = OpenCL.CL_INVALID_SAMPLER
+const CLFFT_INVALID_IMAGE_SIZE                = OpenCL.CL_INVALID_IMAGE_SIZE
+const CLFFT_INVALID_IMAGE_FORMAT_DESCRIPTOR   = OpenCL.CL_INVALID_IMAGE_FORMAT_DESCRIPTOR
+const CLFFT_INVALID_MEM_OBJECT                = OpenCL.CL_INVALID_MEM_OBJECT
+const CLFFT_INVALID_HOST_PTR                  = OpenCL.CL_INVALID_HOST_PTR
+const CLFFT_INVALID_COMMAND_QUEUE             = OpenCL.CL_INVALID_COMMAND_QUEUE
+const CLFFT_INVALID_QUEUE_PROPERTIES          = OpenCL.CL_INVALID_QUEUE_PROPERTIES
+const CLFFT_INVALID_CONTEXT                   = OpenCL.CL_INVALID_CONTEXT
+const CLFFT_INVALID_DEVICE                    = OpenCL.CL_INVALID_DEVICE
+const CLFFT_INVALID_PLATFORM                  = OpenCL.CL_INVALID_PLATFORM
+const CLFFT_INVALID_DEVICE_TYPE               = OpenCL.CL_INVALID_DEVICE_TYPE
+const CLFFT_INVALID_VALUE                     = OpenCL.CL_INVALID_VALUE
+const CLFFT_MAP_FAILURE                       = OpenCL.CL_MAP_FAILURE
+const CLFFT_BUILD_PROGRAM_FAILURE             = OpenCL.CL_BUILD_PROGRAM_FAILURE
+const CLFFT_IMAGE_FORMAT_NOT_SUPPORTED        = OpenCL.CL_IMAGE_FORMAT_NOT_SUPPORTED
+const CLFFT_IMAGE_FORMAT_MISMATCH             = OpenCL.CL_IMAGE_FORMAT_MISMATCH
+const CLFFT_MEM_COPY_OVERLAP                  = OpenCL.CL_MEM_COPY_OVERLAP
+const CLFFT_PROFILING_INFO_NOT_AVAILABLE      = OpenCL.CL_PROFILING_INFO_NOT_AVAILABLE
+const CLFFT_OUT_OF_HOST_MEMORY                = OpenCL.CL_OUT_OF_HOST_MEMORY
+const CLFFT_OUT_OF_RESOURCES                  = OpenCL.CL_OUT_OF_RESOURCES
+const CLFFT_MEM_OBJECT_ALLOCATION_FAILURE     = OpenCL.CL_MEM_OBJECT_ALLOCATION_FAILURE
+const CLFFT_COMPILER_NOT_AVAILABLE            = OpenCL.CL_COMPILER_NOT_AVAILABLE
+const CLFFT_DEVICE_NOT_AVAILABLE              = OpenCL.CL_DEVICE_NOT_AVAILABLE
+const CLFFT_DEVICE_NOT_FOUND                  = OpenCL.CL_DEVICE_NOT_FOUND
+const CLFFT_SUCCESS                           = OpenCL.CL_SUCCESS
     
-    const BUGCHECK                  = int32(4*1024)
-    const NOTIMPLEMENTED            = int32(4*1024+1)  # Functionality is not implemented yet.
-    const TRANSPOSED_NOTIMPLEMENTED = int32(4*1024+2)  # Transposed functionality is not implemented for this transformation.
-    const FILE_NOT_FOUND            = int32(4*1024+3)  # Tried to open an existing file on the host system, but failed.
-    const FILE_CREATE_FAILURE       = int32(4*1024+4)  # Tried to create a file on the host system, but failed.
-    const VERSION_MISMATCH          = int32(4*1024+5)  # Version conflict between client and library.
-    const INVALID_PLAN              = int32(4*1024+6)  # Requested plan could not be found. 
-    const DEVICE_NO_DOUBLE          = int32(4*1024+7)  # Double precision not supported on this device. 
-    const ENDSTATUS                 = int32(4*1024+8)  # This value will always be last, and marks the length of clfftStatus. 
-end
+const CLFFT_BUGCHECK                  = int32(4*1024)
+const CLFFT_NOTIMPLEMENTED            = int32(4*1024+1)  # Functionality is not implemented yet.
+const CLFFT_TRANSPOSED_NOTIMPLEMENTED = int32(4*1024+2)  # Transposed functionality is not implemented for this transformation.
+const CLFFT_FILE_NOT_FOUND            = int32(4*1024+3)  # Tried to open an existing file on the host system, but failed.
+const CLFFT_FILE_CREATE_FAILURE       = int32(4*1024+4)  # Tried to create a file on the host system, but failed.
+const CLFFT_VERSION_MISMATCH          = int32(4*1024+5)  # Version conflict between client and library.
+const CLFFT_INVALID_PLAN              = int32(4*1024+6)  # Requested plan could not be found. 
+const CLFFT_DEVICE_NO_DOUBLE          = int32(4*1024+7)  # Double precision not supported on this device. 
 
-module clfftDim
-    import OpenCL
-    const _1D = int32(1) # 1 Dimensional FFT transform (default). 
-    const _2D = int32(2) # 2 Dimensional FFT transform.
-    const _3D = int32(3) # 3 Dimensional FFT transform.
-end
+const CLFFT_1D = int32(1) # 1 Dimensional FFT transform (default). 
+const CLFFT_2D = int32(2) # 2 Dimensional FFT transform.
+const CLFFT_3D = int32(3) # 3 Dimensional FFT transform.
 
-module clfftLayout
-    import OpenCL
-    const COMPLEX_INTERLEAVED   = int32(1) # An array of complex numbers, with real and imaginary components together (default).
-    const COMPLEX_PLANAR        = int32(2) # Arrays of real componets and arrays of imaginary components that have been seperated out.
-    const HERMITIAN_INTERLEAVED = int32(3) # Compressed form of complex numbers; complex-conjugates not stored, real and imaginary components in same array.
-    const HERMITIAN_PLANAR      = int32(4) # Compressed form of complex numbers; complex-conjugates not stored, real and imaginary components in separate arrays.
-    const REAL                  = int32(5) # An array of real numbers, with no corresponding imaginary components.
-    const ENDLAYOUT             = int32(6) # This value will always be last, and marks the length of clfftLayout.
-end
+const CLFFT_COMPLEX_INTERLEAVED   = int32(1) # An array of complex numbers, with real and imaginary components together (default).
+const CLFFT_COMPLEX_PLANAR        = int32(2) # Arrays of real componets and arrays of imaginary components that have been seperated out.
+const CLFFT_HERMITIAN_INTERLEAVED = int32(3) # Compressed form of complex numbers; complex-conjugates not stored, real and imaginary components in same array.
+const CLFFT_HERMITIAN_PLANAR      = int32(4) # Compressed form of complex numbers; complex-conjugates not stored, real and imaginary components in separate arrays.
+const CLFFT_REAL                  = int32(5) # An array of real numbers, with no corresponding imaginary components.
 
-module clfftPrecision
-    const SINGLE       = int32(1) # An array of complex numbers, with real and imaginary components as floats (default).
-    const DOUBLE       = int32(2) # An array of complex numbers, with real and imaginary components as doubles.
-    const SINGLE_FAST  = int32(3) # Faster implementation preferred.
-    const DOUBLE_FAST  = int32(4) # Faster implementation preferred.
-    const ENDPRECISION = int32(5) # This value will always be last, and marks the length of clfftPrecision.
-end 
+const CLFFT_SINGLE       = int32(1) # An array of complex numbers, with real and imaginary components as floats (default).
+const CLFFT_DOUBLE       = int32(2) # An array of complex numbers, with real and imaginary components as doubles.
+const CLFFT_SINGLE_FAST  = int32(3) # Faster implementation preferred.
+const CLFFT_DOUBLE_FAST  = int32(4) # Faster implementation preferred.
+ 
+const CLFFT_FORWARD      = int32(-1) # FFT transform from the time to the frequency domain. 
+const CLFFT_BACKWARD     = int32(1)  # FFT transform from the frequency to the time domain
+const CLFFT_MINUS        = int32(-1) # Alias for the forward transform. 
+const CLFFT_PLUS         = int32(1)  # Alias for the backward transform. 
 
-module clfftDirection
-    const FORWARD      = int32(-1) # FFT transform from the time to the frequency domain. 
-    const BACKWARD     = int32(1)  # FFT transform from the frequency to the time domain
-    const MINUS        = int32(-1) # Alias for the forward transform. 
-    const PLUS         = int32(1)  # Alias for the backward transform. 
-    const ENDDIRECTION = int32(2)  # This value will always be last, and marks the length of clfftDirection. 
-end
+const CLFFT_INPLACE      = int32(1) # The input and output buffers are the same (default). 
+const CLFFT_OUTOFPLACE   = int32(2) # Seperate input and output buffers.
 
-module clfftResultLocation
-    const INPLACE      = int32(1) # The input and output buffers are the same (default). 
-    const OUTOFPLACE   = int32(2) # Seperate input and output buffers.
-    const ENDPLACE     = int32(3) # This value will always be last, and marks the length of clfftPlaceness. 
-end
-
-module clfftResultTransposed
-    const NOTRANSPOSE   = int32(1) # The results are returned in the original preserved order (default) 
-    const TRANSPOSED    = int32(2) # The result is transposed where transpose kernel is supported (possibly faster) 
-    const ENDTRANSPOSED = int32(3) # This value will always be last, and marks the length of clfftResultTransposed 
-end
-
+const CLFFT_NOTRANSPOSE   = int32(1) # The results are returned in the original preserved order (default) 
+const CLFFT_TRANSPOSED    = int32(2) # The result is transposed where transpose kernel is supported (possibly faster) 
+ 
 # @brief Initialize an clfftSetupData struct for the client
 # @details clfftSetupData is passed to clfftSetup to control behavior of the FFT runtime
 # @param[out] setupData Data structure is cleared, 

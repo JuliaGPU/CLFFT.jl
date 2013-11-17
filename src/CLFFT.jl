@@ -64,7 +64,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     ph = PlanHandle[0]
     err = api.clfftCreateDefaultPlan(ph, ctx.id, 
                                      int32(ndim), lengths)
-    if err != api.clfftStatus.SUCCESS
+    if err != api.CLFFT_SUCCESS
         if ph[1] != 0
             api.clfftDestroyPlan(ph)
         end
@@ -72,9 +72,9 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     end
 
     if T <: clfftSingle
-        api.clfftSetPlanPrecision(ph[1], api.clfftPrecision.SINGLE_FAST)
+        api.clfftSetPlanPrecision(ph[1], api.CLFFT_SINGLE_FAST)
     else
-        api.clfftSetPlanPrecision(ph[1], api.clfftPrecision.DOUBLE_FAST)
+        api.clfftSetPlanPrecision(ph[1], api.CLFFT_DOUBLE_FAST)
     end
 
     @assert ph[1] != 0
@@ -99,13 +99,13 @@ end
 
 set_precision(p::Plan, v::Symbol) = begin
     if v == :single
-        api.clfftSetPlanPrecision(p.id, api.clfftPrecision.SINGLE)
+        api.clfftSetPlanPrecision(p.id, api.CLFFT_SINGLE)
     elseif v == :double
-        api.clfftSetPlanPrecision(p.id, api.clfftPrecision.DOUBLE)
+        api.clfftSetPlanPrecision(p.id, api.CLFFT_DOUBLE)
     elseif v == :single_fast
-        api.clfftSetPlanPrecision(p.id, api.clfftPrecision.SINGLE_FAST)
+        api.clfftSetPlanPrecision(p.id, api.CLFFT_SINGLE_FAST)
     elseif v == :double_fast
-        api.clfftSetPlanPrecision(p.id, api.clfftPrecision.DOUBLE_FAST)
+        api.clfftSetPlanPrecision(p.id, api.CLFFT_DOUBLE_FAST)
     else
         error("unknown precision $v")
     end
@@ -136,16 +136,16 @@ end
 set_layout(p::Plan, in::Symbol, out::Symbol) = begin
     args = Cint[0, 0]
     if in == :interleaved
-        args[1] = api.clfftLayout.COMPLEX_INTERLEAVED
+        args[1] = api.CLFFT_COMPLEX_INTERLEAVED
     elseif in == :planar
-        args[1] = api.clfftLayout.COMPLEX_PLANAR
+        args[1] = api.CLFFT_COMPLEX_PLANAR
     else
         throw(ArgumentError("in must be :interleaved or :planar"))
     end
     if in == :interleaved
-        args[2] = api.clfftLayout.COMPLEX_INTERLEAVED
+        args[2] = api.CLFFT_COMPLEX_INTERLEAVED
     elseif in == :planar
-        args[2] = api.clfftLayout.COMPLEX_PLANAR
+        args[2] = api.CLFFT_COMPLEX_PLANAR
     else
         throw(ArgumentError("in must be :interleaved or :planar"))
     end
@@ -166,9 +166,9 @@ end
 
 set_result(p::Plan, v::Symbol) = begin
     if v == :inplace
-        api.clfftSetResultLocation(p.id, api.clfftResultLocation.INPLACE)
+        api.clfftSetResultLocation(p.id, api.CLFFT_INPLACE)
     elseif v == :outofplace
-        api.clfftSetResultLocation(p.id, api.clfftResultLocation.OUTOFPLACE)
+        api.clfftSetResultLocation(p.id, api.CLFFT_OUTOFPLACE)
     else
         throw(ArgumentError("set_result must be :inplace or :outofplace"))
     end
@@ -283,9 +283,9 @@ end
 transpose_result(p::Plan) = begin
     res = Cint[0]
     api.clfftGetPlanTransposeResult(p.id, res)
-    if res[1] == api.clfftResultTransposed.NOTRANSPOSE
+    if res[1] == api.CLFFT_NOTRANSPOSE
         return false
-    elseif res[1] == api.clfftResultTransposed.TRANSPOSED
+    elseif res[1] == api.CLFFT_TRANSPOSED
         return true
     else
         error("undefined")
@@ -295,10 +295,10 @@ end
 set_transpose_result(p::Plan, transpose::Bool) = begin
     if transpose
         api.clfftSetTransposeResult(p.id,
-                cl.clfftResultTransposed.TRANSPOSED)
+                cl.CLFFT_TRANSPOSED)
     else
         api.clfftSetTransposeResult(p.id,
-                cl.clfftResultTransposed.NOTRANSPOSE)
+                cl.CLFFT_NOTRANSPOSE)
     end
 end
 
@@ -330,8 +330,6 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
                                            out::Union(Nothing,cl.Buffer{T});
                                            wait_for::Union(Nothing,Vector{cl.Event})=nothing,
                                            tmp::Union(Nothing,cl.Buffer{T})=nothing)
-    FORWARD  = api.clfftDirection.FORWARD
-    BACKWARD = api.clfftDirection.BACKWARD
     if dir != :forward && dir != :backward
         throw(ArgumentError("Unknown direction $dir"))
     end
@@ -360,7 +358,7 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
     end
 
     api.clfftEnqueueTransform(p.id,
-                              dir == :forward ? FORWARD : BACKWARD,
+                              dir == :forward ? api.CLFFT_FORWARD : api.CLFFT_BACKWARD,
                               uint32(nqueues),
                               q_ids,
                               uint32(nevts),
