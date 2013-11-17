@@ -4,6 +4,8 @@ using Base.Test
 import OpenCL
 const cl = OpenCL
 
+import CLFFT
+
 macro throws_pred(ex) FactCheck.throws_pred(ex) end
 
 facts("Version") do 
@@ -16,7 +18,7 @@ end
 facts("Plan") do
     context("Constructor") do
         ctx = cl.create_some_context()
-        #@fact @throws_pred(CLFFT.Plan(Complex64, ctx, (10, 10))) => (false, "no error")
+        @fact @throws_pred(CLFFT.Plan(Complex64, ctx, (10, 10))) => (false, "no error")
         p = CLFFT.Plan(Complex64, ctx, (10, 10))
         sleep(1)
     end
