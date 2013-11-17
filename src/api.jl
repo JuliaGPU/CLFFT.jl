@@ -34,11 +34,15 @@ type SetupData
                 cl.cl_uint(patch), 
                 cl.cl_ulong(debug_flags))
         setup = [d]
+        println("setting up...")
         error = clfftSetup(setup)
         if error != clfftStatus.SUCCESS
             error("Failed to setup CLFFT Library")
         end
-        finalizer(d, x -> clfftTeardown())
+        finalizer(d, x -> begin
+            println("tearing down...")
+            clfftTeardown()
+        end)
         return d
     end
 end

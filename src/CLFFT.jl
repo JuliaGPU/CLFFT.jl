@@ -69,9 +69,60 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
         end
         error("Error creating Plan: code $err")
     end
+
+    if T <: clfftSingle
+        api.clfftSetPlanPrecision(ph[1], api.clfftPrecision.SINGLE_FAST)
+    else
+        api.clfftSetPlanPrecision(ph[1], api.clfftPrecision.DOUBLE_FAST)
+    end
+
     @assert ph[1] != 0
     Plan{T}(ph[1], sz)
 end
 
+set_precision(p::Plan, v::Symbol) = begin
+    if v == :single
+        api.clfftSetPlanPrecision(p.id, api.clfftPrecision.SINGLE)
+    elseif v == :double
+        api.clfftSetPlanPrecision(p.id, api.clfftPrecision.DOUBLE)
+    elseif v == :single_fast
+        api.clfftSetPlanPrecision(p.id, api.clfftPrecision.SINGLE_FAST)
+    elseif v == :double_fast
+        api.clfftSetPlanPrecision(p.id, api.clfftPrecision.DOUBLE_FAST)
+    else
+        error("unknown precision $v")
+    end
+end
+
+set_layout(p::Plan, in::Symbol, out::Symbol) = begin
+    args = Cint[0, 0]
+    if in == :interleaved
+        args[1] = api.clfftLayout.COMPLEX_INTERLEAVED
+    elseif in == :planar
+        args[1] = api.clfftLayout.COMPLEX_PLANAR
+    else
+        throw(ArgumentError("in must be :interleaved or :planar"))
+    end
+    if in == :interleaved
+        args[2] = api.clfftLayout.COMPLEX_INTERLEAVED
+    elseif in == :planar
+        args[2] = api.clfftLayout.COMPLEX_PLANAR
+    else
+        throw(ArgumentError("in must be :interleaved or :planar"))
+    end
+    api.clfftSetLayout(p.id, args[1], args[2])
+end
+
+set_result(p::Plan, v::Symbol) = begin
+    if v == :inplace
+        api.clfftSetLayout(p.id, api.clfftLayout.INPLACE)
+    elseif v == :outofplace
+        api.clfftSetLayout(p.id, api.clfftLayout.OUTOFPLACE)
+    else
+        throw(ArgumentError("set_result must be :inplace or :outofplace"))
+    end
+end
+
+#    err = clfftSetResultLocation(planHandle, CLFFT_INPLACE);
 
 end # module

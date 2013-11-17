@@ -20,7 +20,6 @@ facts("Plan") do
         ctx = cl.create_some_context()
         @fact @throws_pred(CLFFT.Plan(Complex64, ctx, (10, 10))) => (false, "no error")
         p = CLFFT.Plan(Complex64, ctx, (10, 10))
-        sleep(1)
     end
 end
 
