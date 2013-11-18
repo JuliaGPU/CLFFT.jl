@@ -114,7 +114,7 @@ end
 layout(p::Plan) = begin
     i = Cint[0]
     o = Cint[0]
-    api.clfftSetLayout(p.id, i, o)
+    api.clfftGetLayout(p.id, i, o)
     lout = x -> begin
         if x == 1
             return :interleaved
@@ -179,7 +179,7 @@ scaling_factor(p::Plan, dir::Symbol) = begin
     d::Cint
     if dir == :forward
         d = int32(-1)
-    elseif d == :backward
+    elseif dir == :backward
         d = int32(1)
     else
         error("undefined")
@@ -217,8 +217,9 @@ set_dim(p::Plan, d::Integer) = begin
 end
 
 dim(p::Plan) = begin
-    res = Csize_t[0]
-    api.clfftGetPlanDim(p.id, res)
+    res  = Int32[0]
+    size = Csize_t[0]
+    api.clfftGetPlanDim(p.id, res, size)
     return int(res[1])
 end
 
