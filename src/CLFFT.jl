@@ -61,13 +61,11 @@ type Plan{T<:clfftNumber}
     istride::Dims # strides of input
     
     function Plan(plan::PlanHandle, sz::Dims)
-        println("constructing plan $(plan)")
         p = new(plan,sz,sz)
         finalizer(p, x -> begin 
             if x.id != 0
-                println("destroying plan $(x.id)")
                 #TODO: this segfaults the julia interpreter
-                #api.clfftDestroyPlan(x.id)
+                #@check api.clfftDestroyPlan(x.id)
             end
             x.id = 0
         end)
@@ -95,9 +93,9 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     end
 
     if T <: clfftSingle
-        @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_SINGLE_FAST)
+        @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_SINGLE)
     else
-        @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_DOUBLE_FAST)
+        @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_DOUBLE)
     end
 
     @assert ph[1] != 0
