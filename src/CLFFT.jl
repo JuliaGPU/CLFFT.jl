@@ -37,7 +37,7 @@ version() = begin
 end
 
 # Module level library handle,
-# when module is GC'd, the finalizer on SetupData is
+# when module is GC'd, the finalizer for SetupData is
 # called to teardown the library state
 const __handle = begin
     v = version()
@@ -102,6 +102,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     Plan{T}(ph[1], sz)
 end
 
+
 precision(p::Plan) = begin
     res = Cint[0]
     @check api.clfftGetPlanPrecision(p.id, res)
@@ -118,6 +119,7 @@ precision(p::Plan) = begin
     end
 end
 
+
 set_precision(p::Plan, v::Symbol) = begin
     if v == :single
         @check api.clfftSetPlanPrecision(p.id, api.CLFFT_SINGLE)
@@ -131,6 +133,7 @@ set_precision(p::Plan, v::Symbol) = begin
         error("unknown precision $v")
     end
 end
+
 
 layout(p::Plan) = begin
     i = Cint[0]
@@ -154,6 +157,7 @@ layout(p::Plan) = begin
     (lout(i[1]), lout(o[1]))
 end
 
+
 set_layout(p::Plan, in::Symbol, out::Symbol) = begin
     args = Cint[0, 0]
     if in == :interleaved
@@ -173,6 +177,7 @@ set_layout(p::Plan, in::Symbol, out::Symbol) = begin
     @check api.clfftSetLayout(p.id, args[1], args[2])
 end
 
+
 result(p::Plan) = begin
     res = Cint[0]
     @check api.clfftGetResultLocation(p.id, res)
@@ -185,6 +190,7 @@ result(p::Plan) = begin
     end
 end
 
+
 set_result(p::Plan, v::Symbol) = begin
     if v == :inplace
         @check api.clfftSetResultLocation(p.id, api.CLFFT_INPLACE)
@@ -194,6 +200,7 @@ set_result(p::Plan, v::Symbol) = begin
         throw(ArgumentError("set_result must be :inplace or :outofplace"))
     end
 end
+
 
 scaling_factor(p::Plan, dir::Symbol) = begin
     res = Cint[0]
@@ -210,6 +217,7 @@ scaling_factor(p::Plan, dir::Symbol) = begin
     return scale[1]
 end
 
+
 set_scaling_factor(p::Plan, dir::Symbol, f::FloatingPoint) = begin
     if dir == :forward
         d = int32(-1)
@@ -221,10 +229,12 @@ set_scaling_factor(p::Plan, dir::Symbol, f::FloatingPoint) = begin
     @check api.clfftsetPlanScale(p.id, d, float32(f))
 end
 
+
 set_batchsize(p::Plan, n::Integer) = begin 
     @assert n > 0
     @check api.clfftSetPlanBatchSize(p.id, convert(Csize_t, n))
 end
+
 
 batchsize(p::Plan) = begin
     res = Csize_t[0]
@@ -232,10 +242,12 @@ batchsize(p::Plan) = begin
     return int(res[1])
 end
 
+
 set_dim(p::Plan, d::Integer) = begin
     @assert d > 0 && d <= 3
     @check api.clfftSetPlanDim(p.id, convert(Csize_t, d))
 end
+
 
 dim(p::Plan) = begin
     res  = Int32[0]
@@ -243,6 +255,7 @@ dim(p::Plan) = begin
     @check api.clfftGetPlanDim(p.id, res, size)
     return int(res[1])
 end
+
 
 set_lengths(p::Plan, dims::Dims) = begin
     ndim = length(dims)
@@ -254,12 +267,14 @@ set_lengths(p::Plan, dims::Dims) = begin
     @check api.clfftSetPlanLength(p.id, int32(ndim), nd)
 end
 
+
 lengths(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
     @check api.clfftGetPlanLength(p.id, int32(d), res)
     return int(res)
 end
+
 
 instride(p::Plan) = begin
     d = dim(p)
@@ -268,12 +283,14 @@ instride(p::Plan) = begin
     return int(res)
 end
 
-set_instride(p::Plan, instrides::Vector{Integer}) = begin
+
+set_instride(p::Plan) = begin
     d = length(instrides)
     @assert d == dim(p)
-    strides = Csize_t[s for s in instrides]
+    strides = Csize_t[int(s) for s in instrides]
     @check api.clfftSetPlanInStride(p.id, int32(d), strides)
 end
+
 
 outstride(p::Plan) = begin
     d = dim(p)
@@ -282,12 +299,14 @@ outstride(p::Plan) = begin
     return int(res)
 end
 
-set_outstride(p::Plan, outstrides::Vector{Integer}) = begin
+
+set_outstride(p::Plan, outstrides) = begin
     d = length(outstrides)
     @assert d == dim(p)
-    strides = Csize_t[s for s in outstrides]
+    strides = Csize_t[int(s) for s in outstrides]
     api.clfftSetPlanInStride(p.id, int32(d), strides)
 end
+
 
 distance(p::Plan) = begin
     indist = Csize_t[0]
@@ -296,11 +315,13 @@ distance(p::Plan) = begin
     return (indist[1], odist[1])
 end
 
+
 set_distance(p::Plan, indist::Integer, odist::Integer) = begin 
     i = Csize_t[indist]
     o = Csize_t[odist]
     @check api.clfftSetPlanDistance(p.id, i, o)
 end
+
 
 transpose_result(p::Plan) = begin
     res = Cint[0]
@@ -314,6 +335,7 @@ transpose_result(p::Plan) = begin
     end
 end
 
+
 set_transpose_result(p::Plan, transpose::Bool) = begin
     if transpose
         @check api.clfftSetTransposeResult(p.id,
@@ -323,6 +345,7 @@ set_transpose_result(p::Plan, transpose::Bool) = begin
                 cl.CLFFT_NOTRANSPOSE)
     end
 end
+
 
 tmp_buffer_size(p::Plan) = begin
     res = Csize_t[0]
@@ -337,13 +360,15 @@ context(p::Plan) = begin
     return cl.Context(res[1])
 end
 
+
 bake(p::Plan, qs::Vector{cl.CmdQueue}) = begin
     nqueues = length(qs)
     q_ids = [q.id for q in qs]
     # TODO: callback
-    @check api.clfftBakePlan(p.id, uint32(nqueues), q_ids, C_NULL, C_NULL)
+    @check api.clfftBakePlan(p.id, nqueues, q_ids, C_NULL, C_NULL)
 end
 bake(p::Plan, q::cl.CmdQueue) = bake(p, [q])
+
 
 function enqueue_transform{T<:clfftNumber}(p::Plan,
                                            dir::Symbol,
@@ -355,30 +380,24 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
     if dir != :forward && dir != :backward
         throw(ArgumentError("Unknown direction $dir"))
     end
-    
     q_ids = [q.id for q in qs]
     in_buff_ids  = [in.id]
-    
     out_buff_ids = C_NULL
     if out != nothing
         out_buff_ids = [out.id]
     end 
-
     nevts = 0
     evt_ids = C_NULL 
     if wait_for != nothing
         nevts = length(wait_for)
         evt_ids = [evt.id for evt in wait_for]
     end
-
     nqueues = length(q_ids)
     out_evts = Array(cl.CL_event, nqueues)
-    
     tmp_buffer = C_NULL
     if tmp != nothing
         tmp_buff_id = [tmp.id]
     end
-
     @check api.clfftEnqueueTransform(
                               p.id,
                               dir == :forward ? api.CLFFT_FORWARD : api.CLFFT_BACKWARD,
@@ -390,7 +409,6 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
                               in_buff_ids,
                               out_buff_ids,
                               tmp_buffer)
-
     return [cl.Event(e_id) for e_id in out_evts]
 end
 
