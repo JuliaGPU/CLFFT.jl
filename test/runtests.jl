@@ -9,6 +9,22 @@ const clfft = CLFFT
 
 macro throws_pred(ex) FactCheck.throws_pred(ex) end
 
+facts("2D FFT Inplace") do
+    const N = 512
+    device, ctx, queue = cl.create_compute_context()
+
+    X = ones(Complex64, (N, N))
+    bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
+
+    p = clfft.Plan(Complex64, ctx, X)
+    clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
+    R = cl.read(queue, bufX)
+    
+    err = norm(R - fft(X))
+    @fact isapprox(err, zero(Float32)) => true
+    Base.gc()
+end
+
 facts("Version") do 
     @fact isa(CLFFT.version(), NTuple{3,Int}) => true
     @fact clfft.version()[1] >= 2 => true
@@ -24,7 +40,7 @@ facts("Plan") do
 end
 
 facts("Example FFT Single") do
-    const N = 1024
+    const N = 512
     _, ctx, queue = cl.create_compute_context()
 
     X = ones(Complex64, N)
@@ -47,12 +63,12 @@ facts("Example FFT Single") do
     @fact clfft.scaling_factor(p, :backward) => float32(1.0 / length(X))
     @fact clfft.batchsize(p) => 1
 
-#   clfft.bake(p, queue) 
+    #clfft.bake(p, queue) 
     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
-    cl.finish(queue)
-    
+    # read is blocking (waits on pending event for result)
     R = cl.read(queue, bufX)
     @fact isapprox(norm(R - fft(X)), zero(Float32)) => true
+    Base.gc()
 end
 
 facts("Example FFT Double") do
@@ -81,7 +97,6 @@ facts("Example FFT Double") do
 
 #        clfft.bake(p, queue) 
         clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
-        cl.finish(queue)
         R = cl.read(queue, bufX)
 
         @fact isapprox(norm(R - fft(X)), zero(Float32)) => true

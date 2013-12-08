@@ -57,11 +57,9 @@ typealias PlanHandle Csize_t
 
 type Plan{T<:clfftNumber}
     id::PlanHandle
-    sz::Dims # size of array on which plan operates (Int tuple)
-    istride::Dims # strides of input
     
-    function Plan(plan::PlanHandle, sz::Dims)
-        p = new(plan,sz,sz)
+    function Plan(plan::PlanHandle)
+        p = new(plan)
         finalizer(p, x -> begin 
             if x.id != 0
                 #TODO: this segfaults the julia interpreter
@@ -99,9 +97,60 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     end
 
     @assert ph[1] != 0
-    Plan{T}(ph[1], sz)
+    Plan{T}(ph[1])
 end
 
+function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, in::StridedArray{T}, region)
+    ndim = length(region)
+    if ndim > 3
+        throw(ArgumentError("Plans can have dimensions of 1, 2, or 3"))
+    end
+    if ndims(in) != ndim
+        throw(ArgumentError("input array and region must have the same dimensionality"))
+    end
+    insize = size(in)
+    lengths = Csize_t[0,0,0]
+    for i in 1:ndim
+        lengths[i] = insize[i]
+    end
+    @show region
+    @show insize 
+    ph = PlanHandle[0]
+    err = api.clfftCreateDefaultPlan(ph, ctx.id, int32(ndim), lengths)
+    if err != api.CLFFT_SUCCESS
+        if ph[1] != 0
+            @check api.clfftDestroyPlan(ph)
+        end
+        throw(CLFFTError(err))
+    end
+    if T <: clfftSingle
+        @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_SINGLE)
+    else
+        @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_DOUBLE)
+    end
+    @assert ph[1] != 0
+    plan = Plan{T}(ph[1])
+    
+    #TODO: Make these work for all array dim. & regions
+    # My laptop cannot compile the generated kernels so 
+    # need to test on workstation
+    tdim = ndim
+    tstrides = strides(in)
+    tdistance = 0
+    tbatchsize = 1
+    
+    set_result(plan, :inplace)
+    set_layout(plan, :interleaved, :interleaved)
+    set_instride(plan, tstrides)
+    set_outstride(plan, tstrides)
+    set_distance(plan, tdistance, tdistance)
+    set_batchsize(plan, tbatchsize)
+
+    return plan
+end
+
+Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, in::StridedArray{T}) = 
+        Plan(T, ctx, in, 1:ndims(in))
 
 precision(p::Plan) = begin
     res = Cint[0]
@@ -284,7 +333,7 @@ instride(p::Plan) = begin
 end
 
 
-set_instride(p::Plan) = begin
+set_instride(p::Plan, instrides) = begin
     d = length(instrides)
     @assert d == dim(p)
     strides = Csize_t[int(s) for s in instrides]
@@ -317,8 +366,9 @@ end
 
 
 set_distance(p::Plan, indist::Integer, odist::Integer) = begin 
-    i = Csize_t[indist]
-    o = Csize_t[odist]
+    @assert indist >= 0 && odist >= 0
+    i = uint(indist)
+    o = uint(odist)
     @check api.clfftSetPlanDistance(p.id, i, o)
 end
 
@@ -411,6 +461,5 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
                               tmp_buffer)
     return [cl.Event(e_id) for e_id in out_evts]
 end
-
         
 end # module
