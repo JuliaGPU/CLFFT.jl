@@ -100,21 +100,19 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     Plan{T}(ph[1])
 end
 
-function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, in::StridedArray{T}, region)
+function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, input::StridedArray{T}, region)
     ndim = length(region)
     if ndim > 3
         throw(ArgumentError("Plans can have dimensions of 1, 2, or 3"))
     end
-    if ndims(in) != ndim
+    if ndims(input) != ndim
         throw(ArgumentError("input array and region must have the same dimensionality"))
     end
-    insize = size(in)
+    insize = size(input)
     lengths = Csize_t[0,0,0]
     for i in 1:ndim
         lengths[i] = insize[i]
     end
-    @show region
-    @show insize 
     ph = PlanHandle[0]
     err = api.clfftCreateDefaultPlan(ph, ctx.id, int32(ndim), lengths)
     if err != api.CLFFT_SUCCESS
@@ -131,11 +129,8 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, in::StridedArray{T}, r
     @assert ph[1] != 0
     plan = Plan{T}(ph[1])
     
-    #TODO: Make these work for all array dim. & regions
-    # My laptop cannot compile the generated kernels so 
-    # need to test on workstation
     tdim = ndim
-    tstrides = strides(in)
+    tstrides = strides(input)
     tdistance = 0
     tbatchsize = 1
     
@@ -149,8 +144,8 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, in::StridedArray{T}, r
     return plan
 end
 
-Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, in::StridedArray{T}) = 
-        Plan(T, ctx, in, 1:ndims(in))
+Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, input::StridedArray{T}) = 
+        Plan(T, ctx, input, 1:ndims(input))
 
 precision(p::Plan) = begin
     res = Cint[0]

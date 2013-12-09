@@ -19,10 +19,9 @@ facts("2D FFT Inplace") do
     p = clfft.Plan(Complex64, ctx, X)
     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
     R = cl.read(queue, bufX)
-    
+    R = reshape(R, size(X))
     err = norm(R - fft(X))
     @fact isapprox(err, zero(Float32)) => true
-    Base.gc()
 end
 
 facts("Version") do 
