@@ -10,18 +10,15 @@ const clfft = CLFFT
 macro throws_pred(ex) FactCheck.throws_pred(ex) end
 
 facts("2D FFT Inplace") do
-    const N = 512
+    const N = 1024
     device, ctx, queue = cl.create_compute_context()
-
-    X = ones(Complex64, (N, N))
-    bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
-
+    X = rand(Complex64, (N, N))
     p = clfft.Plan(Complex64, ctx, X)
+    bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
-    R = cl.read(queue, bufX)
-    R = reshape(R, size(X))
-    err = norm(R - fft(X))
-    @fact isapprox(err, zero(Float32)) => true
+    R = reshape(cl.read(queue, bufX), size(X))
+    @show err = norm(R - fft(X))
+    @fact isapprox(err, zero(Complex64)) => true
 end
 
 facts("Version") do 
@@ -42,7 +39,7 @@ facts("Example FFT Single") do
     const N = 512
     _, ctx, queue = cl.create_compute_context()
 
-    X = ones(Complex64, N)
+    X = rand(Complex64, N)
     bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
 
     p = clfft.Plan(Complex64, ctx, size(X))
@@ -66,7 +63,9 @@ facts("Example FFT Single") do
     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
     # read is blocking (waits on pending event for result)
     R = cl.read(queue, bufX)
-    @fact isapprox(norm(R - fft(X)), zero(Float32)) => true
+    @show err = norm(R - fft(X))
+    # TODO: check error bounds for single/double precision
+    @fact err < 1e-4 => true
     Base.gc()
 end
 
@@ -74,7 +73,7 @@ facts("Example FFT Double") do
     const N = 1024
     device, ctx, queue = cl.create_compute_context()
 
-    X = ones(Complex128, N)
+    X = rand(Complex128, N)
     bufX = cl.Buffer(Complex128, ctx, :copy, hostbuf=X)
     try  
         p = clfft.Plan(Complex128, ctx, size(X))
@@ -97,8 +96,9 @@ facts("Example FFT Double") do
 #        clfft.bake(p, queue) 
         clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
         R = cl.read(queue, bufX)
-
-        @fact isapprox(norm(R - fft(X)), zero(Float32)) => true
+        @show err = norm(R - fft(X))
+        # TODO: check error bounds for double precision
+        @fact err < 1e-12 => true
     catch err
         if err.desc == :CLFFT_DEVICE_NO_DOUBLE
             info("OpenCL.Device $device\ndoes not support double precision")
