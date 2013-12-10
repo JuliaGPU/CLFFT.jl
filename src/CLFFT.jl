@@ -100,7 +100,8 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     Plan{T}(ph[1])
 end
 
-function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, input::StridedArray{T}, region)
+function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, 
+                              input::StridedArray{T}, region)
     ndim = length(region)
     if ndim > 3
         throw(ArgumentError("Plans can have dimensions of 1, 2, or 3"))
@@ -131,6 +132,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, input::StridedArray{T}
     
     tdim = ndim
     tstrides = strides(input)
+    #TODO : this works for dense arrays
     tdistance = 0
     tbatchsize = 1
     
