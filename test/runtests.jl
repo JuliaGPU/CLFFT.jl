@@ -9,7 +9,6 @@ const clfft = CLFFT
 
 macro throws_pred(ex) FactCheck.throws_pred(ex) end
 
-# numpy's allclose 
 function allclose{T}(x::AbstractArray{T}, y::AbstractArray{T}; rtol=1e-5, atol=1e-8)
     @assert length(x) == length(y)
     @inbounds begin 

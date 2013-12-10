@@ -132,7 +132,8 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     
     tdim = ndim
     tstrides = strides(input)
-    #TODO : this works for dense arrays
+    # TODO : this works for dense arrays
+    # need to test out for arbitrary regions
     tdistance = 0
     tbatchsize = 1
     
