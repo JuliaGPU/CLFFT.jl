@@ -100,6 +100,7 @@ facts("Example FFT Single") do
     p = clfft.Plan(Complex64, ctx, size(X))
     clfft.set_layout(p, :interleaved, :interleaved)
     clfft.set_result(p, :inplace)
+    #clfft.bake(p, queue) 
     
     @fact clfft.context(p) => ctx
     @fact clfft.precision(p) => :single
@@ -114,7 +115,6 @@ facts("Example FFT Single") do
     @fact clfft.scaling_factor(p, :backward) => float32(1.0 / length(X))
     @fact clfft.batchsize(p) => 1
 
-    #clfft.bake(p, queue) 
     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
     # read is blocking (waits on pending event for result)
     R = cl.read(queue, bufX)

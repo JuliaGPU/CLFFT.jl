@@ -6,6 +6,9 @@ const cl = OpenCL
 include("api.jl")
 include("error.jl")
 
+const SP_MAX_LEN = 1 << 24
+const DP_MAX_LEN = 1 << 22
+
 immutable CLFFTError
     code::Int
     desc::Symbol
@@ -75,10 +78,25 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     if length(sz) > 3
         throw(ArgumentError("Plans can have dimensions of 1,2 or 3"))
     end
+    #TODO: check if input is a 2, 3,or 5 multiple...
     ndim = length(sz) 
     lengths = Csize_t[0, 0, 0]
+    total_length = 1
     for i in 1:ndim
-        lengths[i] = sz[i]
+        s = sz[i]
+        lengths[i] = s
+        total_length *= s
+    end
+    if T <: clfftSingle
+        if total_length > SP_MAX_LEN
+            throw(ArgumentError("""CLFFT supports single precision transform
+                                   lengths up to $(SP_MAX_LEN)"""))
+        end
+    else
+        if total_length > DP_MAX_LEN
+            throw(ArgumentError("clFFT supports double precision transform
+                                 lengths up to $(DP_MAX_LEN)"""))
+        end
     end
     ph = PlanHandle[0]
     err = api.clfftCreateDefaultPlan(ph, ctx.id, 
@@ -412,7 +430,6 @@ end
 bake(p::Plan, qs::Vector{cl.CmdQueue}) = begin
     nqueues = length(qs)
     q_ids = [q.id for q in qs]
-    # TODO: callback
     @check api.clfftBakePlan(p.id, nqueues, q_ids, C_NULL, C_NULL)
 end
 bake(p::Plan, q::cl.CmdQueue) = bake(p, [q])
@@ -421,18 +438,18 @@ bake(p::Plan, q::cl.CmdQueue) = bake(p, [q])
 function enqueue_transform{T<:clfftNumber}(p::Plan,
                                            dir::Symbol,
                                            qs::Vector{cl.CmdQueue},
-                                           in::cl.Buffer{T},
-                                           out::Union(Nothing,cl.Buffer{T});
+                                           input::cl.Buffer{T},
+                                           output::Union(Nothing,cl.Buffer{T});
                                            wait_for::Union(Nothing,Vector{cl.Event})=nothing,
                                            tmp::Union(Nothing,cl.Buffer{T})=nothing)
     if dir != :forward && dir != :backward
         throw(ArgumentError("Unknown direction $dir"))
     end
     q_ids = [q.id for q in qs]
-    in_buff_ids  = [in.id]
+    in_buff_ids  = [input.id]
     out_buff_ids = C_NULL
-    if out != nothing
-        out_buff_ids = [out.id]
+    if output != nothing
+        out_buff_ids = [output.id]
     end 
     nevts = 0
     evt_ids = C_NULL 
