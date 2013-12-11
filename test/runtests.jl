@@ -9,12 +9,13 @@ const clfft = CLFFT
 
 macro throws_pred(ex) FactCheck.throws_pred(ex) end
 
+const TOLERANCE = 1e-3
+
 function allclose{T}(x::AbstractArray{T}, y::AbstractArray{T}; rtol=1e-5, atol=1e-8)
     @assert length(x) == length(y)
     @inbounds begin 
         for i in length(x)
-            xx = x[i]
-            yy = y[i]
+            xx, yy = x[i], y[i]
             if !(isapprox(xx, yy; rtol=rtol, atol=atol))
                 return false
             end
@@ -23,6 +24,33 @@ function allclose{T}(x::AbstractArray{T}, y::AbstractArray{T}; rtol=1e-5, atol=1
     return true
 end
 
+#Note: these functions have been adapted from the clFFT tests (buffer.h)
+function floats_about_equal{T<:clfft.clfftNumber}(a::T, b::T)
+    tol  = convert(T, TOLERANCE)
+    comp = 1e-5
+    if T <: Real
+        if abs(a) < comp && abs(b) < comp
+            return true
+        end
+        return abs(a - b) > abs(a * tol) ? false : true
+    else
+        return (floats_about_equal(real(a), real(b)) &&
+                floats_about_equal(imag(b), imag(b)))
+    end
+end
+
+function allclose_clfft{T<:clfft.clfftNumber}(x::AbstractArray{T}, y::AbstractArray{T})
+    @assert length(x) == length(y)
+    @inbounds begin
+        for i in length(x)
+            xx, yy = x[i], y[i]
+            if !(floats_about_equal(xx, yy))
+                return false
+            end
+        end
+    end
+    return true
+end
 
 facts("2D FFT Inplace") do
     const N = 1024
@@ -33,6 +61,7 @@ facts("2D FFT Inplace") do
     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
     R = reshape(cl.read(queue, bufX), size(X))
     @fact allclose(R, fft(X); rtol=1e-2, atol=1e-3) => true
+    @fact allclose_clfft(R, fft(X)) => true
 end
 
 facts("3D FFT Inplace") do
@@ -44,6 +73,7 @@ facts("3D FFT Inplace") do
     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
     R = reshape(cl.read(queue, bufX), size(X))
     @fact allclose(R, fft(X); rtol=1e-2, atol=1e-3) => true
+    @fact allclose_clfft(R, fft(X)) => true
 end
 
 facts("Version") do 
@@ -89,7 +119,7 @@ facts("Example FFT Single") do
     # read is blocking (waits on pending event for result)
     R = cl.read(queue, bufX)
     @fact allclose(R, fft(X); rtol=1e-2, atol=1e-3) => true
-    Base.gc()
+    @fact allclose_clfft(R, fft(X)) => true
 end
 
 facts("Example FFT Double") do
@@ -120,6 +150,7 @@ facts("Example FFT Double") do
         clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
         R = cl.read(queue, bufX)
         @fact allclose(R, fft(X); rtol=1e-2, atol=1e-3) => true
+        @fact allclose_clfft(R, fft(X)) => true
     catch err
         if err.desc == :CLFFT_DEVICE_NO_DOUBLE
             info("OpenCL.Device $device\ndoes not support double precision")
