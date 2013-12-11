@@ -77,10 +77,11 @@ facts("3D FFT Inplace") do
 end
 
 facts("Version") do 
-    @fact isa(CLFFT.version(), NTuple{3,Int}) => true
-    @fact clfft.version()[1] >= 2 => true
-    @fact clfft.version()[2] >= 1 => true
-    @fact clfft.version()[3] >= 0 => true
+    @fact isa(CLFFT.version(), VersionNumber) => true
+    v = clfft.version()
+    @fact v.major >= 2 => true
+    @fact v.minor >= 1 => true
+    @fact v.patch >= 0 => true
 end
 
 facts("Plan") do

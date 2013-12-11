@@ -36,7 +36,7 @@ version() = begin
     minor = cl.CL_uint[0]
     patch = cl.CL_uint[0]
     api.clfftGetVersion(major, minor, patch)
-    return (int(major[1]), int(minor[1]), int(patch[1]))
+    return VersionNumber(int(major[1]), int(minor[1]), int(patch[1]))
 end
 
 # Module level library handle,
@@ -44,7 +44,7 @@ end
 # called to teardown the library state
 const __handle = begin
     v = version()
-    api.SetupData(v[1], v[2], v[3], 0)
+    api.SetupData(v.major, v.minor, v.patch, 0)
 end
 
 # clFFT floating-point types:
