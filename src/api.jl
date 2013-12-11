@@ -49,7 +49,7 @@ end
 
 
 typealias PlanHandle Csize_t
-typealias Callback   Any 
+typealias Callback   Ptr{Void} 
 typealias UserData   Ptr{Void}
 
 typealias Precision  Cint

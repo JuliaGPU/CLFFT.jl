@@ -53,10 +53,11 @@ function allclose_clfft{T<:clfft.clfftNumber}(x::AbstractArray{T}, y::AbstractAr
 end
 
 facts("2D FFT Inplace") do
-    const N = 1024
+    const N = 512
     device, ctx, queue = cl.create_compute_context()
     X = rand(Complex64, (N, N))
     p = clfft.Plan(Complex64, ctx, X)
+    clfft.bake(p, queue)
     bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
     R = reshape(cl.read(queue, bufX), size(X))
