@@ -129,8 +129,22 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     end
     insize = size(input)
     lengths = Csize_t[0,0,0]
+    total_length = 1
     for i in 1:ndim
-        lengths[i] = insize[i]
+        s = insize[i]
+        lengths[i] = s
+        total_length *= s 
+    end
+    if T <: clfftSingle
+        if total_length > SP_MAX_LEN
+            throw(ArgumentError("""CLFFT supports single precision transform
+                                   lengths up to $(SP_MAX_LEN)"""))
+        end
+    else
+        if total_length > DP_MAX_LEN
+            throw(ArgumentError("clFFT supports double precision transform
+                                 lengths up to $(DP_MAX_LEN)"""))
+        end
     end
     ph = PlanHandle[0]
     err = api.clfftCreateDefaultPlan(ph, ctx.id, int32(ndim), lengths)
