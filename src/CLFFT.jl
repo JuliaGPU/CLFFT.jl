@@ -84,8 +84,13 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     total_length = 1
     for i in 1:ndim
         s = sz[i]
-        lengths[i] = s
-        total_length *= s
+        if mod(s, 2) == 0 || mod(s, 3) == 0 || mod(s, 5) == 0 
+            lengths[i] = s
+            total_length *= s
+        else
+            throw(ArgumentError("""Plans can only have dims that are 
+                                   powers of 2, 3, or 5"""))
+        end
     end
     if T <: clfftSingle
         if total_length > SP_MAX_LEN
@@ -132,8 +137,13 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     total_length = 1
     for i in 1:ndim
         s = insize[i]
-        lengths[i] = s
-        total_length *= s 
+        if mod(s, 2) == 0 || mod(s, 3) == 0 || mod(s, 5) == 0 
+            lengths[i] = s
+            total_length *= s
+        else
+            throw(ArgumentError("""Plans can only have dims that are 
+                                   powers of 2, 3, or 5"""))
+        end
     end
     if T <: clfftSingle
         if total_length > SP_MAX_LEN
