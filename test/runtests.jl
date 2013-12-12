@@ -52,44 +52,6 @@ function allclose_clfft{T<:clfft.clfftNumber}(x::AbstractArray{T}, y::AbstractAr
     return true
 end
 
-facts("2D FFT Inplace") do
-    transform_sizes = [2^6, 3^4, 5^3]
-    for N in transform_sizes 
-        for M in transform_sizes
-            @show (N, M)
-            X = rand(Complex64, (N, M))
-            fftw_X = fft(X)
-            for device in cl.devices()
-                ctx = cl.Context(device)
-                queue = cl.CmdQueue(ctx)
-                p = clfft.Plan(Complex64, ctx, X)
-                clfft.bake!(p, queue)
-                bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
-                clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
-                R = reshape(cl.read(queue, bufX), size(X))
-                @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
-                @fact allclose_clfft(R, fftw_X) => true
-            end
-        end
-    end
-end
-
-facts("3D FFT Inplace") do
-    const N = 64
-    X = rand(Complex64, (N, N, N))
-    fftw_X = fft(X)
-    for device in cl.devices()
-        ctx = cl.Context(device)
-        queue = cl.CmdQueue(ctx)
-        p = clfft.Plan(Complex64, ctx, X)
-        clfft.bake!(p, queue)
-        bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
-        clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
-        R = reshape(cl.read(queue, bufX), size(X))
-        @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
-        @fact allclose_clfft(R, fftw_X) => true
-    end
-end
 
 facts("Version") do 
     @fact isa(CLFFT.version(), VersionNumber) => true
@@ -103,6 +65,22 @@ facts("Plan") do
     context("Constructor") do
         ctx = cl.create_some_context()
         @fact @throws_pred(clfft.Plan(Complex64, ctx, (10, 10))) => (false, "no error")
+        # Plan's throw error on non-muliple 2,3,or 5 dims
+        for x in [2,3,5]
+            @fact @throws_pred(clfft.Plan(Complex64, ctx, (x^3,))) => (false, "no error")
+            @fact @throws_pred(clfft.Plan(Complex64, ctx, (7^3,))) => (true, "error")
+            for y in [2,3,5]
+                @fact @throws_pred(clfft.Plan(Complex64, ctx, (x^3, y^3))) => (false, "no error")
+                @fact @throws_pred(clfft.Plan(Complex64, ctx, (7^3, y^3))) => (true, "error")
+                for z in [2,3,5]
+                @fact @throws_pred(clfft.Plan(Complex64, ctx, (x^3, y^3, z^3))) => (false, "no error")
+                @fact @throws_pred(clfft.Plan(Complex64, ctx, (x^3, 7^3, z^3))) => (true, "error")
+                end
+            end
+        end
+        # FFT only for 1,2 or 3 dim 
+        @fact @throws_pred(clfft.Plan(Complex64, ctx, (2^2, 2^2, 2^2, 2^2))) => (true, "error")
+        @fact @throws_pred(clfft.Plan(Complex64, ctx, ())) => (true, "error")
     end
 end
 
@@ -186,3 +164,43 @@ facts("Example FFT Double") do
         end
     end
 end
+
+facts("2D FFT Inplace") do
+    transform_sizes = [2^6, 3^4, 5^3]
+    for N in transform_sizes 
+        for M in transform_sizes
+            @show (N, M)
+            X = rand(Complex64, (N, M))
+            fftw_X = fft(X)
+            for device in cl.devices()
+                ctx = cl.Context(device)
+                queue = cl.CmdQueue(ctx)
+                p = clfft.Plan(Complex64, ctx, X)
+                clfft.bake!(p, queue)
+                bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
+                clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
+                R = reshape(cl.read(queue, bufX), size(X))
+                @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
+                @fact allclose_clfft(R, fftw_X) => true
+            end
+        end
+    end
+end
+
+facts("3D FFT Inplace") do
+    const N = 64
+    X = rand(Complex64, (N, N, N))
+    fftw_X = fft(X)
+    for device in cl.devices()
+        ctx = cl.Context(device)
+        queue = cl.CmdQueue(ctx)
+        p = clfft.Plan(Complex64, ctx, X)
+        clfft.bake!(p, queue)
+        bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
+        clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
+        R = reshape(cl.read(queue, bufX), size(X))
+        @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
+        @fact allclose_clfft(R, fftw_X) => true
+    end
+end
+
