@@ -24,8 +24,7 @@ clfft.set_result!(p, :inplace)
 clfft.bake!(p, queue)
 
 clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
-cl.finish(queue)
-    
 result = cl.read(queue, bufX)
+
 @assert isapprox(norm(result - fft(X)), zero(Float32)) => true
 ```
