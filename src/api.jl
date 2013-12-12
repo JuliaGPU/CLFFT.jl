@@ -39,6 +39,9 @@ type SetupData
             error("Failed to setup CLFFT Library")
         end
         finalizer(d, x -> begin
+            # for unknown reasons, gc'ing before teardown
+            # helps prevent a double-free event Plan's 
+            Base.gc()
             clfftTeardown()
         end)
         return d

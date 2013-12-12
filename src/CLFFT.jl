@@ -101,7 +101,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
         end
     else
         if total_length > DP_MAX_LEN
-            throw(ArgumentError("clFFT supports double precision transform
+            throw(ArgumentError("""clFFT supports double precision transform
                                  lengths up to $(DP_MAX_LEN)"""))
         end
     end
@@ -109,7 +109,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     err = api.clfftCreateDefaultPlan(ph, ctx.id, 
                                      int32(ndim), lengths)
     if err != api.CLFFT_SUCCESS
-        if ph[1] != C_NULL
+        if ph[1] != 0
             @check api.clfftDestroyPlan(ph)
         end
         throw(CLFFTError(err))
@@ -119,7 +119,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     else
         @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_DOUBLE)
     end
-    @assert ph[1] != C_NULL
+    @assert ph[1] != 0
     return Plan{T}(ph)
 end
 
@@ -152,14 +152,14 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
         end
     else
         if total_length > DP_MAX_LEN
-            throw(ArgumentError("clFFT supports double precision transform
+            throw(ArgumentError("""clFFT supports double precision transform
                                  lengths up to $(DP_MAX_LEN)"""))
         end
     end
     ph = PlanHandle[0]
     err = api.clfftCreateDefaultPlan(ph, ctx.id, int32(ndim), lengths)
     if err != api.CLFFT_SUCCESS
-        if ph[1] != C_NULL
+        if ph[1] != 0
             @check api.clfftDestroyPlan(ph)
         end
         throw(CLFFTError(err))
@@ -169,7 +169,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     else
         @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_DOUBLE)
     end
-    @assert ph[1] != C_NULL
+    @assert ph[1] != 0
     plan = Plan{T}(ph)
     
     tdim = ndim

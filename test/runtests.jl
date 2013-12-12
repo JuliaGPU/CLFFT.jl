@@ -81,11 +81,12 @@ facts("Plan") do
         # FFT only for 1,2 or 3 dim 
         @fact @throws_pred(clfft.Plan(Complex64, ctx, (2^2, 2^2, 2^2, 2^2))) => (true, "error")
         @fact @throws_pred(clfft.Plan(Complex64, ctx, ())) => (true, "error")
+        Base.gc()
     end
 end
 
 facts("Example FFT Single") do
-    for N in [2^8, 3^7, 5^6]
+    for N in [2^8,]# 3^7, 5^6]
         @show N
         X = rand(Complex64, N)
         fftw_X = fft(X)
@@ -121,7 +122,7 @@ facts("Example FFT Single") do
 end
 
 facts("Example FFT Double") do
-    for N in [2^7, 3^6, 5^5]
+    for N in [2^7,]# 3^6, 5^5]
         @show N
         X = rand(Complex128, N)
         fftw_X = fft(X)
@@ -166,7 +167,7 @@ facts("Example FFT Double") do
 end
 
 facts("2D FFT Inplace") do
-    transform_sizes = [2^6, 3^4, 5^3]
+    transform_sizes = [2^6,]#3^4, 5^3]
     for N in transform_sizes 
         for M in transform_sizes
             @show (N, M)
@@ -205,4 +206,3 @@ facts("3D FFT Inplace") do
         Base.gc()
     end
 end
-
