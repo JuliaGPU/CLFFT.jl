@@ -78,7 +78,6 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     if length(sz) > 3
         throw(ArgumentError("Plans can have dimensions of 1,2 or 3"))
     end
-    #TODO: check if input is a 2, 3,or 5 multiple...
     ndim = length(sz) 
     lengths = Csize_t[0, 0, 0]
     total_length = 1
@@ -179,12 +178,11 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     tdistance = 0
     tbatchsize = 1
     
-    set_result(plan, :inplace)
-    set_layout(plan, :interleaved, :interleaved)
-    set_instride(plan, tstrides)
-    set_outstride(plan, tstrides)
-    set_distance(plan, tdistance, tdistance)
-    set_batchsize(plan, tbatchsize)
+    set_layout!(plan, :interleaved, :interleaved)
+    set_instride!(plan, tstrides)
+    set_outstride!(plan, tstrides)
+    set_distance!(plan, tdistance, tdistance)
+    set_batchsize!(plan, tbatchsize)
 
     return plan
 end
@@ -209,7 +207,7 @@ precision(p::Plan) = begin
 end
 
 
-set_precision(p::Plan, v::Symbol) = begin
+set_precision!(p::Plan, v::Symbol) = begin
     if v == :single
         @check api.clfftSetPlanPrecision(p.id, api.CLFFT_SINGLE)
     elseif v == :double
@@ -221,6 +219,7 @@ set_precision(p::Plan, v::Symbol) = begin
     else
         error("unknown precision $v")
     end
+    return p
 end
 
 
@@ -247,7 +246,7 @@ layout(p::Plan) = begin
 end
 
 
-set_layout(p::Plan, in::Symbol, out::Symbol) = begin
+set_layout!(p::Plan, in::Symbol, out::Symbol) = begin
     args = Cint[0, 0]
     if in == :interleaved
         args[1] = api.CLFFT_COMPLEX_INTERLEAVED
@@ -264,6 +263,7 @@ set_layout(p::Plan, in::Symbol, out::Symbol) = begin
         throw(ArgumentError("in must be :interleaved or :planar"))
     end
     @check api.clfftSetLayout(p.id, args[1], args[2])
+    return p
 end
 
 
@@ -280,7 +280,7 @@ result(p::Plan) = begin
 end
 
 
-set_result(p::Plan, v::Symbol) = begin
+set_result!(p::Plan, v::Symbol) = begin
     if v == :inplace
         @check api.clfftSetResultLocation(p.id, api.CLFFT_INPLACE)
     elseif v == :outofplace
@@ -288,6 +288,7 @@ set_result(p::Plan, v::Symbol) = begin
     else
         throw(ArgumentError("set_result must be :inplace or :outofplace"))
     end
+    return p
 end
 
 
@@ -307,7 +308,7 @@ scaling_factor(p::Plan, dir::Symbol) = begin
 end
 
 
-set_scaling_factor(p::Plan, dir::Symbol, f::FloatingPoint) = begin
+set_scaling_factor!(p::Plan, dir::Symbol, f::FloatingPoint) = begin
     if dir == :forward
         d = int32(-1)
     elseif d == :backward
@@ -316,12 +317,14 @@ set_scaling_factor(p::Plan, dir::Symbol, f::FloatingPoint) = begin
         error("undefined")
     end
     @check api.clfftsetPlanScale(p.id, d, float32(f))
+    return p
 end
 
 
-set_batchsize(p::Plan, n::Integer) = begin 
+set_batchsize!(p::Plan, n::Integer) = begin 
     @assert n > 0
     @check api.clfftSetPlanBatchSize(p.id, convert(Csize_t, n))
+    return p
 end
 
 
@@ -332,9 +335,10 @@ batchsize(p::Plan) = begin
 end
 
 
-set_dim(p::Plan, d::Integer) = begin
+set_dim!(p::Plan, d::Integer) = begin
     @assert d > 0 && d <= 3
     @check api.clfftSetPlanDim(p.id, convert(Csize_t, d))
+    return p
 end
 
 
@@ -346,7 +350,7 @@ dim(p::Plan) = begin
 end
 
 
-set_lengths(p::Plan, dims::Dims) = begin
+set_lengths!(p::Plan, dims::Dims) = begin
     ndim = length(dims)
     @assert ndim <= 3
     nd = Array(Csize_t, ndim)
@@ -354,6 +358,7 @@ set_lengths(p::Plan, dims::Dims) = begin
         nd[i] = d
     end
     @check api.clfftSetPlanLength(p.id, int32(ndim), nd)
+    return p
 end
 
 
@@ -373,11 +378,12 @@ instride(p::Plan) = begin
 end
 
 
-set_instride(p::Plan, instrides) = begin
+set_instride!(p::Plan, instrides) = begin
     d = length(instrides)
     @assert d == dim(p)
     strides = Csize_t[int(s) for s in instrides]
     @check api.clfftSetPlanInStride(p.id, int32(d), strides)
+    return p
 end
 
 
@@ -389,11 +395,12 @@ outstride(p::Plan) = begin
 end
 
 
-set_outstride(p::Plan, outstrides) = begin
+set_outstride!(p::Plan, outstrides) = begin
     d = length(outstrides)
     @assert d == dim(p)
     strides = Csize_t[int(s) for s in outstrides]
-    api.clfftSetPlanInStride(p.id, int32(d), strides)
+    @check api.clfftSetPlanInStride(p.id, int32(d), strides)
+    return p
 end
 
 
@@ -405,11 +412,12 @@ distance(p::Plan) = begin
 end
 
 
-set_distance(p::Plan, indist::Integer, odist::Integer) = begin 
+set_distance!(p::Plan, indist::Integer, odist::Integer) = begin 
     @assert indist >= 0 && odist >= 0
     i = uint(indist)
     o = uint(odist)
     @check api.clfftSetPlanDistance(p.id, i, o)
+    return p
 end
 
 
@@ -451,12 +459,13 @@ context(p::Plan) = begin
 end
 
 
-bake(p::Plan, qs::Vector{cl.CmdQueue}) = begin
+bake!(p::Plan, qs::Vector{cl.CmdQueue}) = begin
     nqueues = length(qs)
     q_ids = [q.id for q in qs]
     @check api.clfftBakePlan(p.id, nqueues, q_ids, C_NULL, C_NULL)
+    return p
 end
-bake(p::Plan, q::cl.CmdQueue) = bake(p, [q])
+bake!(p::Plan, q::cl.CmdQueue) = bake!(p, [q])
 
 
 function enqueue_transform{T<:clfftNumber}(p::Plan,
