@@ -53,31 +53,36 @@ function allclose_clfft{T<:clfft.clfftNumber}(x::AbstractArray{T}, y::AbstractAr
 end
 
 facts("2D FFT Inplace") do
-    const N = 512
-    X = rand(Complex64, (N, N))
-    fftw_X = fft(X)
-    for device in cl.devices()
-        ctx = cl.Context(device)
-        queue = cl.CmdQueue(ctx)
-        p = clfft.Plan(Complex64, ctx, X)
-        clfft.bake(p, queue)
-        bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
-        clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
-        R = reshape(cl.read(queue, bufX), size(X))
-        @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
-        @fact allclose_clfft(R, fftw_X) => true
+    transform_sizes = [2^6, 3^4, 5^3]
+    for N in transform_sizes 
+        for M in transform_sizes
+            @show (N, M)
+            X = rand(Complex64, (N, M))
+            fftw_X = fft(X)
+            for device in cl.devices()
+                ctx = cl.Context(device)
+                queue = cl.CmdQueue(ctx)
+                p = clfft.Plan(Complex64, ctx, X)
+                clfft.bake!(p, queue)
+                bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
+                clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
+                R = reshape(cl.read(queue, bufX), size(X))
+                @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
+                @fact allclose_clfft(R, fftw_X) => true
+            end
+        end
     end
 end
 
 facts("3D FFT Inplace") do
-    const N = 256
+    const N = 64
     X = rand(Complex64, (N, N, N))
     fftw_X = fft(X)
     for device in cl.devices()
         ctx = cl.Context(device)
         queue = cl.CmdQueue(ctx)
         p = clfft.Plan(Complex64, ctx, X)
-        clfft.bake(p, queue)
+        clfft.bake!(p, queue)
         bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
         clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
         R = reshape(cl.read(queue, bufX), size(X))
@@ -102,56 +107,21 @@ facts("Plan") do
 end
 
 facts("Example FFT Single") do
-    const N = 1024
-    
-    X = rand(Complex64, N)
-    fftw_X = fft(X)
-    for device in cl.devices()
-        ctx = cl.Context(device)
-        queue = cl.CmdQueue(ctx)
-        bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
-        p = clfft.Plan(Complex64, ctx, size(X))
-        clfft.set_layout(p, :interleaved, :interleaved)
-        clfft.set_result(p, :inplace)
-        clfft.bake(p, queue) 
-        
-        @fact clfft.context(p) => ctx
-        @fact clfft.precision(p) => :single
-        @fact clfft.layout(p) => (:interleaved, :interleaved)
-        @fact clfft.result(p) => :inplace
-        @fact clfft.dim(p) => 1
-        @fact length(clfft.lengths(p)) => 1
-        @fact clfft.lengths(p)[1] => length(X)
-        @fact clfft.transpose_result(p) => false
-
-        @fact clfft.scaling_factor(p, :forward) => float32(1.0)
-        @fact clfft.scaling_factor(p, :backward) => float32(1.0 / length(X))
-        @fact clfft.batchsize(p) => 1
-
-        clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
-        # read is blocking (waits on pending event for result)
-        R = cl.read(queue, bufX)
-        @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
-        @fact allclose_clfft(R, fftw_X) => true
-    end
-end
-
-facts("Example FFT Double") do
-    const N = 1024
-    device, ctx, queue = cl.create_compute_context()
-
-    X = rand(Complex128, N)
-    fftw_X = fft(X)
-    for device in cl.devices()
-        try  
-            bufX = cl.Buffer(Complex128, ctx, :copy, hostbuf=X)
-            p = clfft.Plan(Complex128, ctx, size(X))
-            clfft.set_layout(p, :interleaved, :interleaved)
-            clfft.set_result(p, :inplace)
-            clfft.bake(p, queue) 
+    for N in [2^8, 3^7, 5^6]
+        @show N
+        X = rand(Complex64, N)
+        fftw_X = fft(X)
+        for device in cl.devices()
+            ctx = cl.Context(device)
+            queue = cl.CmdQueue(ctx)
+            bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
+            p = clfft.Plan(Complex64, ctx, size(X))
+            clfft.set_layout!(p, :interleaved, :interleaved)
+            clfft.set_result!(p, :inplace)
+            clfft.bake!(p, queue) 
             
             @fact clfft.context(p) => ctx
-            @fact clfft.precision(p) => :double
+            @fact clfft.precision(p) => :single
             @fact clfft.layout(p) => (:interleaved, :interleaved)
             @fact clfft.result(p) => :inplace
             @fact clfft.dim(p) => 1
@@ -164,14 +134,54 @@ facts("Example FFT Double") do
             @fact clfft.batchsize(p) => 1
 
             clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
+            # read is blocking (waits on pending event for result)
             R = cl.read(queue, bufX)
             @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
             @fact allclose_clfft(R, fftw_X) => true
-        catch err
-            if err.desc == :CLFFT_DEVICE_NO_DOUBLE
-                info("OpenCL.Device $device\ndoes not support double precision")
-            else
-                error("Error constructing Double Prec. Plan")
+        end
+    end
+end
+
+facts("Example FFT Double") do
+    for N in [2^7, 3^6, 5^5]
+        @show N
+        X = rand(Complex128, N)
+        fftw_X = fft(X)
+        for device in cl.devices()
+            ctx = cl.Context(device)
+            queue = cl.CmdQueue(ctx)
+            try  
+                bufX = cl.Buffer(Complex128, ctx, :copy, hostbuf=X)
+                p = clfft.Plan(Complex128, ctx, size(X))
+                clfft.set_layout!(p, :interleaved, :interleaved)
+                clfft.set_result!(p, :inplace)
+                clfft.bake!(p, queue) 
+                
+                @fact clfft.context(p) => ctx
+                @fact clfft.precision(p) => :double
+                @fact clfft.layout(p) => (:interleaved, :interleaved)
+                @fact clfft.result(p) => :inplace
+                @fact clfft.dim(p) => 1
+                @fact length(clfft.lengths(p)) => 1
+                @fact clfft.lengths(p)[1] => length(X)
+                @fact clfft.transpose_result(p) => false
+
+                @fact clfft.scaling_factor(p, :forward) => float32(1.0)
+                @fact clfft.scaling_factor(p, :backward) => float32(1.0 / length(X))
+                @fact clfft.batchsize(p) => 1
+
+                clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
+                R = cl.read(queue, bufX)
+                @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
+                @fact allclose_clfft(R, fftw_X) => true
+            catch err
+                if isa(err, clfft.CLFFTError)
+                    if err.desc == :CLFFT_DEVICE_NO_DOUBLE
+                        info("OpenCL.Device $device\ndoes not support double precision")
+                    end
+                else
+                    throw(err)
+                end
             end
         end
     end
