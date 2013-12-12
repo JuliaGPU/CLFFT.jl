@@ -28,6 +28,7 @@ macro check(clfftFunc)
         if err != api.CLFFT_SUCCESS
             throw(CLFFTError(err))
         end
+        err
     end
 end
 
@@ -60,16 +61,16 @@ typealias PlanHandle Csize_t
 
 
 type Plan{T<:clfftNumber}
-    id::PlanHandle
+    # boxed handle (most api functions need address, setup/teardown need pointer)
+    id::Array{PlanHandle,1}
     
-    function Plan(plan::PlanHandle)
+    function Plan(plan::Array{PlanHandle,1})
         p = new(plan)
         finalizer(p, x -> begin 
-            if x.id != C_NULL 
-                #handle_ptr = convert(Ptr{PlanHandle}, [x.id])
-                #api.clfftDestroyPlan(handle_ptr)
+            if x.id[1] != C_NULL
+                @check api.clfftDestroyPlan(x.id)
             end
-            x.id = C_NULL
+            x.id[1] = C_NULL
         end)
         return p
     end
@@ -108,20 +109,18 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     err = api.clfftCreateDefaultPlan(ph, ctx.id, 
                                      int32(ndim), lengths)
     if err != api.CLFFT_SUCCESS
-        if ph[1] != 0
+        if ph[1] != C_NULL
             @check api.clfftDestroyPlan(ph)
         end
         throw(CLFFTError(err))
     end
-
     if T <: clfftSingle
         @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_SINGLE)
     else
         @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_DOUBLE)
     end
-
-    @assert ph[1] != 0
-    Plan{T}(ph[1])
+    @assert ph[1] != C_NULL
+    return Plan{T}(ph)
 end
 
 function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, 
@@ -160,7 +159,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     ph = PlanHandle[0]
     err = api.clfftCreateDefaultPlan(ph, ctx.id, int32(ndim), lengths)
     if err != api.CLFFT_SUCCESS
-        if ph[1] != 0
+        if ph[1] != C_NULL
             @check api.clfftDestroyPlan(ph)
         end
         throw(CLFFTError(err))
@@ -170,8 +169,8 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     else
         @check api.clfftSetPlanPrecision(ph[1], api.CLFFT_DOUBLE)
     end
-    @assert ph[1] != 0
-    plan = Plan{T}(ph[1])
+    @assert ph[1] != C_NULL
+    plan = Plan{T}(ph)
     
     tdim = ndim
     tstrides = strides(input)
@@ -194,7 +193,7 @@ Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, input::StridedArray{T}) =
 
 precision(p::Plan) = begin
     res = Cint[0]
-    @check api.clfftGetPlanPrecision(p.id, res)
+    @check api.clfftGetPlanPrecision(p.id[1], res)
     if res[1] == 1
         return :single
     elseif res[1] == 2
@@ -211,13 +210,13 @@ end
 
 set_precision!(p::Plan, v::Symbol) = begin
     if v == :single
-        @check api.clfftSetPlanPrecision(p.id, api.CLFFT_SINGLE)
+        @check api.clfftSetPlanPrecision(p.id[1], api.CLFFT_SINGLE)
     elseif v == :double
-        @check api.clfftSetPlanPrecision(p.id, api.CLFFT_DOUBLE)
+        @check api.clfftSetPlanPrecision(p.id[1], api.CLFFT_DOUBLE)
     elseif v == :single_fast
-        @check api.clfftSetPlanPrecision(p.id, api.CLFFT_SINGLE_FAST)
+        @check api.clfftSetPlanPrecision(p.id[1], api.CLFFT_SINGLE_FAST)
     elseif v == :double_fast
-        @check api.clfftSetPlanPrecision(p.id, api.CLFFT_DOUBLE_FAST)
+        @check api.clfftSetPlanPrecision(p.id[1], api.CLFFT_DOUBLE_FAST)
     else
         error("unknown precision $v")
     end
@@ -228,7 +227,7 @@ end
 layout(p::Plan) = begin
     i = Cint[0]
     o = Cint[0]
-    @check api.clfftGetLayout(p.id, i, o)
+    @check api.clfftGetLayout(p.id[1], i, o)
     lout = x -> begin
         if x == 1
             return :interleaved
@@ -264,14 +263,14 @@ set_layout!(p::Plan, in::Symbol, out::Symbol) = begin
     else
         throw(ArgumentError("in must be :interleaved or :planar"))
     end
-    @check api.clfftSetLayout(p.id, args[1], args[2])
+    @check api.clfftSetLayout(p.id[1], args[1], args[2])
     return p
 end
 
 
 result(p::Plan) = begin
     res = Cint[0]
-    @check api.clfftGetResultLocation(p.id, res)
+    @check api.clfftGetResultLocation(p.id[1], res)
     if res[1] == 1
         return :inplace
     elseif res[1] == 2
@@ -284,9 +283,9 @@ end
 
 set_result!(p::Plan, v::Symbol) = begin
     if v == :inplace
-        @check api.clfftSetResultLocation(p.id, api.CLFFT_INPLACE)
+        @check api.clfftSetResultLocation(p.id[1], api.CLFFT_INPLACE)
     elseif v == :outofplace
-        @check api.clfftSetResultLocation(p.id, api.CLFFT_OUTOFPLACE)
+        @check api.clfftSetResultLocation(p.id[1], api.CLFFT_OUTOFPLACE)
     else
         throw(ArgumentError("set_result must be :inplace or :outofplace"))
     end
@@ -305,7 +304,7 @@ scaling_factor(p::Plan, dir::Symbol) = begin
         error("undefined")
     end
     scale = Float32[0]
-    @check api.clfftGetPlanScale(p.id, d, scale)
+    @check api.clfftGetPlanScale(p.id[1], d, scale)
     return scale[1]
 end
 
@@ -318,28 +317,28 @@ set_scaling_factor!(p::Plan, dir::Symbol, f::FloatingPoint) = begin
     else
         error("undefined")
     end
-    @check api.clfftsetPlanScale(p.id, d, float32(f))
+    @check api.clfftsetPlanScale(p.id[1], d, float32(f))
     return p
 end
 
 
 set_batchsize!(p::Plan, n::Integer) = begin 
     @assert n > 0
-    @check api.clfftSetPlanBatchSize(p.id, convert(Csize_t, n))
+    @check api.clfftSetPlanBatchSize(p.id[1], convert(Csize_t, n))
     return p
 end
 
 
 batchsize(p::Plan) = begin
     res = Csize_t[0]
-    @check api.clfftGetPlanBatchSize(p.id, res)
+    @check api.clfftGetPlanBatchSize(p.id[1], res)
     return int(res[1])
 end
 
 
 set_dim!(p::Plan, d::Integer) = begin
     @assert d > 0 && d <= 3
-    @check api.clfftSetPlanDim(p.id, convert(Csize_t, d))
+    @check api.clfftSetPlanDim(p.id[1], convert(Csize_t, d))
     return p
 end
 
@@ -347,7 +346,7 @@ end
 dim(p::Plan) = begin
     res  = Int32[0]
     size = Csize_t[0]
-    @check api.clfftGetPlanDim(p.id, res, size)
+    @check api.clfftGetPlanDim(p.id[1], res, size)
     return int(res[1])
 end
 
@@ -359,7 +358,7 @@ set_lengths!(p::Plan, dims::Dims) = begin
     for (i, d) in enumerate(dims)
         nd[i] = d
     end
-    @check api.clfftSetPlanLength(p.id, int32(ndim), nd)
+    @check api.clfftSetPlanLength(p.id[1], int32(ndim), nd)
     return p
 end
 
@@ -367,7 +366,7 @@ end
 lengths(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
-    @check api.clfftGetPlanLength(p.id, int32(d), res)
+    @check api.clfftGetPlanLength(p.id[1], int32(d), res)
     return int(res)
 end
 
@@ -375,7 +374,7 @@ end
 instride(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
-    @check api.clfftGetPlanInStride(p.id, int32(d), res)
+    @check api.clfftGetPlanInStride(p.id[1], int32(d), res)
     return int(res)
 end
 
@@ -384,7 +383,7 @@ set_instride!(p::Plan, instrides) = begin
     d = length(instrides)
     @assert d == dim(p)
     strides = Csize_t[int(s) for s in instrides]
-    @check api.clfftSetPlanInStride(p.id, int32(d), strides)
+    @check api.clfftSetPlanInStride(p.id[1], int32(d), strides)
     return p
 end
 
@@ -392,7 +391,7 @@ end
 outstride(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
-    @check api.clfftGetPlanOutStride(p.id, int32(d), res)
+    @check api.clfftGetPlanOutStride(p.id[1], int32(d), res)
     return int(res)
 end
 
@@ -401,7 +400,7 @@ set_outstride!(p::Plan, outstrides) = begin
     d = length(outstrides)
     @assert d == dim(p)
     strides = Csize_t[int(s) for s in outstrides]
-    @check api.clfftSetPlanInStride(p.id, int32(d), strides)
+    @check api.clfftSetPlanInStride(p.id[1], int32(d), strides)
     return p
 end
 
@@ -409,7 +408,7 @@ end
 distance(p::Plan) = begin
     indist = Csize_t[0]
     odist  = Csize_t[0]
-    @check api.clfftGetPlanDistance(p.id, indist, odist)
+    @check api.clfftGetPlanDistance(p.id[1], indist, odist)
     return (indist[1], odist[1])
 end
 
@@ -418,14 +417,14 @@ set_distance!(p::Plan, indist::Integer, odist::Integer) = begin
     @assert indist >= 0 && odist >= 0
     i = uint(indist)
     o = uint(odist)
-    @check api.clfftSetPlanDistance(p.id, i, o)
+    @check api.clfftSetPlanDistance(p.id[1], i, o)
     return p
 end
 
 
 transpose_result(p::Plan) = begin
     res = Cint[0]
-    @check api.clfftGetPlanTransposeResult(p.id, res)
+    @check api.clfftGetPlanTransposeResult(p.id[1], res)
     if res[1] == api.CLFFT_NOTRANSPOSE
         return false
     elseif res[1] == api.CLFFT_TRANSPOSED
@@ -438,10 +437,10 @@ end
 
 set_transpose_result(p::Plan, transpose::Bool) = begin
     if transpose
-        @check api.clfftSetTransposeResult(p.id,
+        @check api.clfftSetTransposeResult(p.id[1], d,
                 cl.CLFFT_TRANSPOSED)
     else
-        @check api.clfftSetTransposeResult(p.id,
+        @check api.clfftSetTransposeResult(p.id[1], d,
                 cl.CLFFT_NOTRANSPOSE)
     end
 end
@@ -449,14 +448,14 @@ end
 
 tmp_buffer_size(p::Plan) = begin
     res = Csize_t[0]
-    @check api.clfftGetTmpBufSize(p.id, res)
+    @check api.clfftGetTmpBufSize(p.id[1], res)
     return int(res[1])
 end
 
 
 context(p::Plan) = begin
     res = Array(cl.CL_context)
-    @check api.clfftGetPlanContext(p.id, res)
+    @check api.clfftGetPlanContext(p.id[1], res)
     return cl.Context(res[1])
 end
 
@@ -464,7 +463,7 @@ end
 bake!(p::Plan, qs::Vector{cl.CmdQueue}) = begin
     nqueues = length(qs)
     q_ids = [q.id for q in qs]
-    @check api.clfftBakePlan(p.id, nqueues, q_ids, C_NULL, C_NULL)
+    @check api.clfftBakePlan(p.id[1], nqueues, q_ids, C_NULL, C_NULL)
     return p
 end
 bake!(p::Plan, q::cl.CmdQueue) = bake!(p, [q])
@@ -499,7 +498,7 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
         tmp_buff_id = [tmp.id]
     end
     @check api.clfftEnqueueTransform(
-                              p.id,
+                              p.id[1],
                               dir == :forward ? api.CLFFT_FORWARD : api.CLFFT_BACKWARD,
                               uint32(nqueues),
                               q_ids,

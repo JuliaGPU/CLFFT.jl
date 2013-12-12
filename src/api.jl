@@ -34,13 +34,11 @@ type SetupData
                 cl.cl_uint(patch), 
                 cl.cl_ulong(debug_flags))
         setup = [d]
-        println("setting up...")
         error = clfftSetup(setup)
         if error != CLFFT_SUCCESS
             error("Failed to setup CLFFT Library")
         end
         finalizer(d, x -> begin
-            println("tearing down...")
             clfftTeardown()
         end)
         return d
@@ -450,4 +448,4 @@ const CLFFT_TRANSPOSED    = int32(2) # The result is transposed where transpose 
                           Ptr{cl.CL_mem},
                           Ptr{cl.CL_mem},
                           cl.CL_mem))
-end
+end # end module
