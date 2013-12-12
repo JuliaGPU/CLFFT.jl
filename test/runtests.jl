@@ -182,6 +182,7 @@ facts("2D FFT Inplace") do
                 R = reshape(cl.read(queue, bufX), size(X))
                 @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
                 @fact allclose_clfft(R, fftw_X) => true
+                Base.gc()
             end
         end
     end
@@ -201,6 +202,7 @@ facts("3D FFT Inplace") do
         R = reshape(cl.read(queue, bufX), size(X))
         @fact allclose(R, fftw_X; rtol=1e-2, atol=1e-3) => true
         @fact allclose_clfft(R, fftw_X) => true
+        Base.gc()
     end
 end
 
