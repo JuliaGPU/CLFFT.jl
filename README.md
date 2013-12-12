@@ -19,8 +19,9 @@ X = ones(Complex64, N)
 bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
 
 p = clfft.Plan(Complex64, ctx, size(X))
-clfft.set_layout(p, :interleaved, :interleaved)
-clfft.set_result(p, :inplace)
+clfft.set_layout!(p, :interleaved, :interleaved)
+clfft.set_result!(p, :inplace)
+clfft.bake!(p, queue)
 
 clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
 cl.finish(queue)
