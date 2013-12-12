@@ -58,21 +58,23 @@ typealias clfftTypeSingle Union(Type{Float32},Type{Complex64})
 
 typealias PlanHandle Csize_t
 
+
 type Plan{T<:clfftNumber}
     id::PlanHandle
     
     function Plan(plan::PlanHandle)
         p = new(plan)
         finalizer(p, x -> begin 
-            if x.id != 0
-                #TODO: this segfaults the julia interpreter
-                #@check api.clfftDestroyPlan(x.id)
+            if x.id != C_NULL 
+                #handle_ptr = convert(Ptr{PlanHandle}, [x.id])
+                #api.clfftDestroyPlan(handle_ptr)
             end
-            x.id = 0
+            x.id = C_NULL
         end)
         return p
     end
 end
+
 
 function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     if length(sz) > 3
