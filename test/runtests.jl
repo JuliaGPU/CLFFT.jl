@@ -206,3 +206,5 @@ facts("3D FFT Inplace") do
         Base.gc()
     end
 end
+
+exitstatus()
