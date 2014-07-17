@@ -1,6 +1,7 @@
 # CLFFT
 
 [![Build Status](https://travis-ci.org/JuliaGPU/CLFFT.jl.png)](https://travis-ci.org/JuliaGPU/CLFFT.jl)
+[![Coverage Status](https://img.shields.io/coveralls/JuliaGPU/CLFFT.jl.svg)](https://coveralls.io/r/JuliaGPU/CLFFT.jl)
 
 Julia bindings to AMD's clFFT library
 
