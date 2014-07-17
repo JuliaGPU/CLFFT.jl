@@ -22,7 +22,7 @@ before_script:
   - cd ${TRAVIS_BUILD_DIR}
   - mkdir -p deps/
   - cd deps/
-  - git clone https://github.com/jakebolewski/clFFT
+  - git clone https://github.com/JuliaGPU/clFFT
   - cd ${TRAVIS_BUILD_DIR}
   - mkdir -p bin/clFFT
   - cd bin/clFFT
