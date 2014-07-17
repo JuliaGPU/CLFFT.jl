@@ -35,11 +35,13 @@ script:
   - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/statTimer:${LD_LIBRARY_PATH}
   - ./Client -i
   - cd ${TRAVIS_BUILD_DIR}
-  - julia -e 'Pkg.init(); Pkg.clone("OpenCL")'
+  - julia -e 'Pkg.init(); Pkg.add("FactCheck"); Pkg.clone("OpenCL")'
   - julia -e 'run(`ln -s $(pwd()) $(Pkg.dir("CLFFT"))`); Pkg.pin("CLFFT"); Pkg.resolve()'
   - julia -e 'using CLFFT; @assert isdefined(:CLFFT); @assert typeof(CLFFT) === Module'
-  - julia test/runtests.jl
+  - julia --code-coverage test/runtests.jl
 
 after_success:
-  - cd ${TRAVIS_BUILD_DIR}/bin/clFFT
-  - make package
+  - julia -e 'cd(Pkg.dir("CLFFT")); 
+              Pkg.add("Coverage"); 
+              using Coverage; 
+              Coveralls.submit(Coveralls.process_folder())'
