@@ -3,9 +3,9 @@ module api
 import OpenCL
 const cl = OpenCL
 
-@unix_only begin
-const libclfft = "libclFFT"
-end 
+@unix_only const libclfft = "libclFFT"
+@windows_only const libclfft = "clFFT"
+
 
 macro clfft(func, arg_types)
     local args_in  = Symbol[symbol("arg$i::$T")
