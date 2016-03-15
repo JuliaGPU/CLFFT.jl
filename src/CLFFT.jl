@@ -13,12 +13,12 @@ immutable CLFFTError
     code::Int
     desc::Symbol
     function CLFFTError(c::Integer)
-        code = int(c)
+        code = Int(c)
         new(code, _clfft_error_codes[code])
     end
 end
 
-Base.show(io::IO, err::CLFFTError) = 
+Base.show(io::IO, err::CLFFTError) =
         Base.print(io, "CLFFTError(code=$(err.code), :$(err.desc))")
 
 macro check(clfftFunc)
@@ -37,7 +37,7 @@ version() = begin
     minor = cl.CL_uint[0]
     patch = cl.CL_uint[0]
     api.clfftGetVersion(major, minor, patch)
-    return VersionNumber(int(major[1]), int(minor[1]), int(patch[1]))
+    return VersionNumber(Int(major[1]), Int(minor[1]), Int(patch[1]))
 end
 
 # Module level library handle,
@@ -49,13 +49,13 @@ const __handle = begin
 end
 
 # clFFT floating-point types:
-typealias clfftNumber Union(Float64,Float32,Complex128,Complex64)
-typealias clfftReal Union(Float64,Float32)
-typealias clfftComplex Union(Complex128,Complex64)
-typealias clfftDouble Union(Float64,Complex128)
-typealias clfftSingle Union(Float32,Complex64)
-typealias clfftTypeDouble Union(Type{Float64},Type{Complex128})
-typealias clfftTypeSingle Union(Type{Float32},Type{Complex64})
+typealias clfftNumber Union{Float64,Float32,Complex128,Complex64}
+typealias clfftReal Union{Float64,Float32}
+typealias clfftComplex Union{Complex128,Complex64}
+typealias clfftDouble Union{Float64,Complex128}
+typealias clfftSingle Union{Float32,Complex64}
+typealias clfftTypeDouble Union{Type{Float64},Type{Complex128}}
+typealias clfftTypeSingle Union{Type{Float32},Type{Complex64}}
 
 typealias PlanHandle Csize_t
 
@@ -63,10 +63,10 @@ typealias PlanHandle Csize_t
 type Plan{T<:clfftNumber}
     # boxed handle (most api functions need address, setup/teardown need pointer)
     id::Array{PlanHandle,1}
-    
+
     function Plan(plan::Array{PlanHandle,1})
         p = new(plan)
-        finalizer(p, x -> begin 
+        finalizer(p, x -> begin
             if x.id[1] != C_NULL
                 @check api.clfftDestroyPlan(x.id)
             end
@@ -81,16 +81,16 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     if length(sz) > 3
         throw(ArgumentError("Plans can have dimensions of 1,2 or 3"))
     end
-    ndim = length(sz) 
+    ndim = length(sz)
     lengths = Csize_t[0, 0, 0]
     total_length = 1
     for i in 1:ndim
         s = sz[i]
-        if mod(s, 2) == 0 || mod(s, 3) == 0 || mod(s, 5) == 0 
+        if mod(s, 2) == 0 || mod(s, 3) == 0 || mod(s, 5) == 0
             lengths[i] = s
             total_length *= s
         else
-            throw(ArgumentError("""Plans can only have dims that are 
+            throw(ArgumentError("""Plans can only have dims that are
                                    powers of 2, 3, or 5"""))
         end
     end
@@ -106,8 +106,8 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
         end
     end
     ph = PlanHandle[0]
-    err = api.clfftCreateDefaultPlan(ph, ctx.id, 
-                                     int32(ndim), lengths)
+    err = api.clfftCreateDefaultPlan(ph, ctx.id,
+                                     Int32(ndim), lengths)
     if err != api.CLFFT_SUCCESS
         if ph[1] != 0
             @check api.clfftDestroyPlan(ph)
@@ -123,7 +123,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     return Plan{T}(ph)
 end
 
-function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, 
+function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
                               input::StridedArray{T}, region)
     ndim = length(region)
     if ndim > 3
@@ -137,11 +137,11 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     total_length = 1
     for i in 1:ndim
         s = insize[i]
-        if mod(s, 2) == 0 || mod(s, 3) == 0 || mod(s, 5) == 0 
+        if mod(s, 2) == 0 || mod(s, 3) == 0 || mod(s, 5) == 0
             lengths[i] = s
             total_length *= s
         else
-            throw(ArgumentError("""Plans can only have dims that are 
+            throw(ArgumentError("""Plans can only have dims that are
                                    powers of 2, 3, or 5"""))
         end
     end
@@ -157,7 +157,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
         end
     end
     ph = PlanHandle[0]
-    err = api.clfftCreateDefaultPlan(ph, ctx.id, int32(ndim), lengths)
+    err = api.clfftCreateDefaultPlan(ph, ctx.id, Int32(ndim), lengths)
     if err != api.CLFFT_SUCCESS
         if ph[1] != 0
             @check api.clfftDestroyPlan(ph)
@@ -171,14 +171,14 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     end
     @assert ph[1] != 0
     plan = Plan{T}(ph)
-    
+
     tdim = ndim
     tstrides = strides(input)
     # TODO : this works for dense arrays
     # need to test out for arbitrary regions
     tdistance = 0
     tbatchsize = 1
-    
+
     set_layout!(plan, :interleaved, :interleaved)
     set_instride!(plan, tstrides)
     set_outstride!(plan, tstrides)
@@ -188,7 +188,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     return plan
 end
 
-Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, input::StridedArray{T}) = 
+Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, input::StridedArray{T}) =
         Plan(T, ctx, input, 1:ndims(input))
 
 precision(p::Plan) = begin
@@ -202,7 +202,7 @@ precision(p::Plan) = begin
         return :single_fast
     elseif res[1] == 4
         return :double_fast
-    else 
+    else
         error("undefined")
     end
 end
@@ -237,7 +237,7 @@ layout(p::Plan) = begin
             return :hermitian_interleaved
         elseif x == 4
             return :hermitian_planar
-        elseif x == 5 
+        elseif x == 5
             return :real
         else
             error("undefined")
@@ -297,9 +297,9 @@ scaling_factor(p::Plan, dir::Symbol) = begin
     res = Cint[0]
     d::Cint
     if dir == :forward
-        d = int32(-1)
+        d = Int32(-1)
     elseif dir == :backward
-        d = int32(1)
+        d = Int32(1)
     else
         error("undefined")
     end
@@ -309,11 +309,11 @@ scaling_factor(p::Plan, dir::Symbol) = begin
 end
 
 
-set_scaling_factor!(p::Plan, dir::Symbol, f::FloatingPoint) = begin
+set_scaling_factor!(p::Plan, dir::Symbol, f::AbstractFloat) = begin
     if dir == :forward
-        d = int32(-1)
+        d = Int32(-1)
     elseif d == :backward
-        d = int32(1)
+        d = Int32(1)
     else
         error("undefined")
     end
@@ -322,7 +322,7 @@ set_scaling_factor!(p::Plan, dir::Symbol, f::FloatingPoint) = begin
 end
 
 
-set_batchsize!(p::Plan, n::Integer) = begin 
+set_batchsize!(p::Plan, n::Integer) = begin
     @assert n > 0
     @check api.clfftSetPlanBatchSize(p.id[1], convert(Csize_t, n))
     return p
@@ -332,7 +332,7 @@ end
 batchsize(p::Plan) = begin
     res = Csize_t[0]
     @check api.clfftGetPlanBatchSize(p.id[1], res)
-    return int(res[1])
+    return Int(res[1])
 end
 
 
@@ -347,7 +347,7 @@ dim(p::Plan) = begin
     res  = Int32[0]
     size = Csize_t[0]
     @check api.clfftGetPlanDim(p.id[1], res, size)
-    return int(res[1])
+    return Int(res[1])
 end
 
 
@@ -358,7 +358,7 @@ set_lengths!(p::Plan, dims::Dims) = begin
     for (i, d) in enumerate(dims)
         nd[i] = d
     end
-    @check api.clfftSetPlanLength(p.id[1], int32(ndim), nd)
+    @check api.clfftSetPlanLength(p.id[1], Int32(ndim), nd)
     return p
 end
 
@@ -366,24 +366,24 @@ end
 lengths(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
-    @check api.clfftGetPlanLength(p.id[1], int32(d), res)
-    return int(res)
+    @check api.clfftGetPlanLength(p.id[1], Int32(d), res)
+    return Int(res)
 end
 
 
 instride(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
-    @check api.clfftGetPlanInStride(p.id[1], int32(d), res)
-    return int(res)
+    @check api.clfftGetPlanInStride(p.id[1], Int32(d), res)
+    return Int(res)
 end
 
 
 set_instride!(p::Plan, instrides) = begin
     d = length(instrides)
     @assert d == dim(p)
-    strides = Csize_t[int(s) for s in instrides]
-    @check api.clfftSetPlanInStride(p.id[1], int32(d), strides)
+    strides = Csize_t[Int(s) for s in instrides]
+    @check api.clfftSetPlanInStride(p.id[1], Int32(d), strides)
     return p
 end
 
@@ -391,16 +391,16 @@ end
 outstride(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
-    @check api.clfftGetPlanOutStride(p.id[1], int32(d), res)
-    return int(res)
+    @check api.clfftGetPlanOutStride(p.id[1], Int32(d), res)
+    return Int(res)
 end
 
 
 set_outstride!(p::Plan, outstrides) = begin
     d = length(outstrides)
     @assert d == dim(p)
-    strides = Csize_t[int(s) for s in outstrides]
-    @check api.clfftSetPlanInStride(p.id[1], int32(d), strides)
+    strides = Csize_t[Int(s) for s in outstrides]
+    @check api.clfftSetPlanInStride(p.id[1], Int32(d), strides)
     return p
 end
 
@@ -413,10 +413,10 @@ distance(p::Plan) = begin
 end
 
 
-set_distance!(p::Plan, indist::Integer, odist::Integer) = begin 
+set_distance!(p::Plan, indist::Integer, odist::Integer) = begin
     @assert indist >= 0 && odist >= 0
-    i = uint(indist)
-    o = uint(odist)
+    i = UInt(indist)
+    o = UInt(odist)
     @check api.clfftSetPlanDistance(p.id[1], i, o)
     return p
 end
@@ -449,7 +449,7 @@ end
 tmp_buffer_size(p::Plan) = begin
     res = Csize_t[0]
     @check api.clfftGetTmpBufSize(p.id[1], res)
-    return int(res[1])
+    return Int(res[1])
 end
 
 
@@ -473,9 +473,9 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
                                            dir::Symbol,
                                            qs::Vector{cl.CmdQueue},
                                            input::cl.Buffer{T},
-                                           output::Union(Nothing,cl.Buffer{T});
-                                           wait_for::Union(Nothing,Vector{cl.Event})=nothing,
-                                           tmp::Union(Nothing,cl.Buffer{T})=nothing)
+                                           output::Union{Void,cl.Buffer{T}};
+                                           wait_for::Union{Void,Vector{cl.Event}}=nothing,
+                                           tmp::Union{Void,cl.Buffer{T}}=nothing)
     if dir != :forward && dir != :backward
         throw(ArgumentError("Unknown direction $dir"))
     end
@@ -484,9 +484,9 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
     out_buff_ids = C_NULL
     if output != nothing
         out_buff_ids = [output.id]
-    end 
+    end
     nevts = 0
-    evt_ids = C_NULL 
+    evt_ids = C_NULL
     if wait_for != nothing
         nevts = length(wait_for)
         evt_ids = [evt.id for evt in wait_for]
@@ -500,9 +500,9 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
     @check api.clfftEnqueueTransform(
                               p.id[1],
                               dir == :forward ? api.CLFFT_FORWARD : api.CLFFT_BACKWARD,
-                              uint32(nqueues),
+                              UInt32(nqueues),
                               q_ids,
-                              uint32(nevts),
+                              UInt32(nevts),
                               evt_ids,
                               out_evts,
                               in_buff_ids,
@@ -510,5 +510,5 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
                               tmp_buffer)
     return [cl.Event(e_id) for e_id in out_evts]
 end
-        
+
 end # module
