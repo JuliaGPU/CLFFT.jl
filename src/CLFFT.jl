@@ -345,7 +345,7 @@ end
 
 dim(p::Plan) = begin
     res  = Int32[0]
-    size = Csize_t[0]
+    size = cl.CL_uint[0]
     @check api.clfftGetPlanDim(p.id[1], res, size)
     return Int(res[1])
 end
@@ -367,7 +367,7 @@ lengths(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
     @check api.clfftGetPlanLength(p.id[1], Int32(d), res)
-    return Int(res)
+    return map(Int, res)
 end
 
 
@@ -375,7 +375,7 @@ instride(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
     @check api.clfftGetPlanInStride(p.id[1], Int32(d), res)
-    return Int(res)
+    return map(Int, res)
 end
 
 
@@ -392,7 +392,7 @@ outstride(p::Plan) = begin
     d = dim(p)
     res = Array(Csize_t, d)
     @check api.clfftGetPlanOutStride(p.id[1], Int32(d), res)
-    return Int(res)
+    return map(Int, res)
 end
 
 
