@@ -16,6 +16,7 @@ const clfft = CLFFT
 
 _, ctx, queue = cl.create_compute_context()
 
+N = 100
 X = ones(Complex64, N)
 bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
 
@@ -27,5 +28,5 @@ clfft.bake!(p, queue)
 clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
 result = cl.read(queue, bufX)
 
-@assert isapprox(norm(result - fft(X)), zero(Float32)) => true
+@assert isapprox(norm(result - fft(X)), zero(Float32))
 ```
