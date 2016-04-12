@@ -1,6 +1,5 @@
 
 language: julia
-sudo: false
 
 julia:
   - release
