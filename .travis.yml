@@ -1,12 +1,14 @@
-language: cpp
-compiler:
-  - clang
+
+language: julia
+sudo: false
+
+julia:
+  - release
+
 notifications:
   email: false
 
 before_install:
-  - sudo add-apt-repository ppa:staticfloat/julia-deps -y
-  - sudo add-apt-repository ppa:staticfloat/julianightlies -y
   - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) restricted"
   - sudo apt-get update -qq -y
   - sudo apt-get install -qq fglrx opencl-headers libboost-program-options-dev libfftw3-dev libgtest-dev
