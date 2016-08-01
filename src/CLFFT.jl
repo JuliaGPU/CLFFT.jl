@@ -40,6 +40,15 @@ version() = begin
     return VersionNumber(Int(major[1]), Int(minor[1]), Int(patch[1]))
 end
 
+function supported_radices()
+  v = version()
+  radices = [2,3,5]
+  v ≥ v"2.8.0"  && push!(radices, 7)
+  v ≥ v"2.12.0" && push!(radices, 11, 13)
+
+  radices
+end
+
 # Module level library handle,
 # when module is GC'd, the finalizer for SetupData is
 # called to teardown the library state
@@ -84,14 +93,16 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     ndim = length(sz)
     lengths = Csize_t[0, 0, 0]
     total_length = 1
+    radices = supported_radices()
     for i in 1:ndim
         s = sz[i]
-        if mod(s, 2) == 0 || mod(s, 3) == 0 || mod(s, 5) == 0
+        fs = keys(factor(s))
+        if fs ⊆ radices
             lengths[i] = s
             total_length *= s
         else
             throw(ArgumentError("""Plans can only have dims that are
-                                   powers of 2, 3, or 5"""))
+                                   powers of $(radices)"""))
         end
     end
     if T <: clfftSingle
@@ -135,14 +146,16 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     insize = size(input)
     lengths = Csize_t[0,0,0]
     total_length = 1
+    radices = supported_radices()
     for i in 1:ndim
         s = insize[i]
-        if mod(s, 2) == 0 || mod(s, 3) == 0 || mod(s, 5) == 0
+        fs = keys(factor(s))
+        if fs ⊆ radices
             lengths[i] = s
             total_length *= s
         else
             throw(ArgumentError("""Plans can only have dims that are
-                                   powers of 2, 3, or 5"""))
+                                   powers of $(radices)"""))
         end
     end
     if T <: clfftSingle
