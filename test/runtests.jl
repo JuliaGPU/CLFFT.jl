@@ -68,13 +68,13 @@ facts("Plan") do
         # Plan's throw error on non-muliple 2,3,or 5 dims
         for x in [2,3,5]
             @fact (clfft.Plan(Complex64, ctx, (x^3,))) --> not(nothing)
-            @fact_throws (clfft.Plan(Complex64, ctx, (7^3,)))
+            @fact_throws (clfft.Plan(Complex64, ctx, (17^3,)))
             for y in [2,3,5]
                 @fact (clfft.Plan(Complex64, ctx, (x^3, y^3))) --> not(nothing)
-                @fact_throws (clfft.Plan(Complex64, ctx, (7^3, y^3)))
+                @fact_throws (clfft.Plan(Complex64, ctx, (17^3, y^3)))
                 for z in [2,3,5]
                 @fact (clfft.Plan(Complex64, ctx, (x^3, y^3, z^3))) --> not(nothing)
-                @fact_throws (clfft.Plan(Complex64, ctx, (x^3, 7^3, z^3)))
+                @fact_throws (clfft.Plan(Complex64, ctx, (x^3, 17^3, z^3)))
                 end
             end
         end
