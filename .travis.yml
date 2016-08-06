@@ -30,8 +30,7 @@ before_script:
   - cmake -DBoost_NO_SYSTEM_PATHS=OFF -DBUILD_TEST=OFF -DCMAKE_CXX_FLAGS="-std=c++11" ${TRAVIS_BUILD_DIR}/deps/clFFT/src
 
 script:
-  - make install
-  - cd package/bin
+  - sudo make install  
   - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/library:${LD_LIBRARY_PATH}
   - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/statTimer:${LD_LIBRARY_PATH}
   #- ./Client -i
