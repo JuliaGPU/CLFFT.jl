@@ -1,16 +1,32 @@
-language: cpp
-compiler:
-  - clang
+language: julia
+
+os:
+  - linux
+
+julia:
+  - 0.5
+
 notifications:
   email: false
 
+sudo: true
+  
 before_install:
-  - sudo add-apt-repository ppa:staticfloat/julia-deps -y
-  - sudo add-apt-repository ppa:staticfloat/julianightlies -y
   - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) restricted"
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo apt-get update -qq -y
+  - sudo apt-get install g++-4.7
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.7 100
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.6 50
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.7 100
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 50
+  - sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-4.7 100
+  - sudo update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-4.6 50
+  - sudo update-alternatives --set g++ /usr/bin/g++-4.7
+  - sudo update-alternatives --set gcc /usr/bin/gcc-4.7
+  - sudo update-alternatives --set cpp-bin /usr/bin/cpp-4.7
   - sudo apt-get install -qq fglrx opencl-headers libboost-program-options-dev libfftw3-dev libgtest-dev
-  - sudo apt-get install libpcre3-dev julia -y
+  - sudo apt-get install libpcre3-dev -y
 
 install:
   - mkdir -p bin/gTest
@@ -33,9 +49,8 @@ script:
   - sudo make install  
   - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/library:${LD_LIBRARY_PATH}
   - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/statTimer:${LD_LIBRARY_PATH}
-  #- ./Client -i
   - cd ${TRAVIS_BUILD_DIR}
-  - julia -e 'Pkg.init(); Pkg.add("FactCheck"); Pkg.clone("OpenCL")'
+  - julia -e 'Pkg.init(); Pkg.add("Primes"); Pkg.add("FactCheck"); Pkg.clone("OpenCL")'
   - julia -e 'run(`ln -s $(pwd()) $(Pkg.dir("CLFFT"))`); Pkg.pin("CLFFT"); Pkg.resolve()'
   - julia -e 'using CLFFT; @assert isdefined(:CLFFT); @assert typeof(CLFFT) === Module'
   - julia --code-coverage test/runtests.jl

@@ -1,16 +1,15 @@
 module api
 
-import OpenCL
-const cl = OpenCL
+import OpenCL.cl
 
-@unix_only const libclfft = "libclFFT"
-@windows_only const libclfft = "clFFT"
+@static if is_unix() const libclfft = "libclFFT" end
+@static if is_windows() const libclfft = "clFFT" end
 
 
 macro clfft(func, arg_types)
-    local args_in  = Symbol[symbol("arg$i::$T")
+    local args_in  = Symbol[Symbol("arg$i::$T")
                             for (i, T) in enumerate(arg_types.args)]
-    local funcname = symbol("clfft$func")
+    local funcname = Symbol("clfft$func")
     @eval begin
         $(funcname)($(args_in...)) = ccall(($(string(funcname)), libclfft),
                                                  cl.CL_int, #clfftStatus
@@ -65,53 +64,53 @@ clfft_dim(x) = convert(Dim, x)
 clfft_direction(x) = convert(Direction, x)
 
 # ERROR CODES
-const CLFFT_INVALID_GLOBAL_WORK_SIZE          = OpenCL.CL_INVALID_GLOBAL_WORK_SIZE
-const CLFFT_INVALID_MIP_LEVEL                 = OpenCL.CL_INVALID_MIP_LEVEL
-const CLFFT_INVALID_BUFFER_SIZE               = OpenCL.CL_INVALID_BUFFER_SIZE
-const CLFFT_INVALID_GL_OBJECT                 = OpenCL.CL_INVALID_GL_OBJECT
-const CLFFT_INVALID_OPERATION                 = OpenCL.CL_INVALID_OPERATION
-const CLFFT_INVALID_EVENT                     = OpenCL.CL_INVALID_EVENT
-const CLFFT_INVALID_EVENT_WAIT_LIST           = OpenCL.CL_INVALID_EVENT_WAIT_LIST,
-const CLFFT_INVALID_GLOBAL_OFFSET             = OpenCL.CL_INVALID_GLOBAL_OFFSET,
-const CLFFT_INVALID_WORK_ITEM_SIZE            = OpenCL.CL_INVALID_WORK_ITEM_SIZE
-const CLFFT_INVALID_WORK_GROUP_SIZE           = OpenCL.CL_INVALID_WORK_GROUP_SIZE
-const CLFFT_INVALID_WORK_DIMENSION            = OpenCL.CL_INVALID_WORK_DIMENSION
-const CLFFT_INVALID_KERNEL_ARGS               = OpenCL.CL_INVALID_KERNEL_ARGS
-const CLFFT_INVALID_ARG_SIZE                  = OpenCL.CL_INVALID_ARG_SIZE
-const CLFFT_INVALID_ARG_VALUE                 = OpenCL.CL_INVALID_ARG_VALUE
-const CLFFT_INVALID_ARG_INDEX                 = OpenCL.CL_INVALID_ARG_INDEX
-const CLFFT_INVALID_KERNEL                    = OpenCL.CL_INVALID_KERNEL
-const CLFFT_INVALID_KERNEL_DEFINITION         = OpenCL.CL_INVALID_KERNEL_DEFINITION
-const CLFFT_INVALID_KERNEL_NAME               = OpenCL.CL_INVALID_KERNEL_NAME
-const CLFFT_INVALID_PROGRAM_EXECUTABLE        = OpenCL.CL_INVALID_PROGRAM_EXECUTABLE
-const CLFFT_INVALID_PROGRAM                   = OpenCL.CL_INVALID_PROGRAM
-const CLFFT_INVALID_BUILD_OPTIONS             = OpenCL.CL_INVALID_BUILD_OPTIONS
-const CLFFT_INVALID_BINARY                    = OpenCL.CL_INVALID_BINARY
-const CLFFT_INVALID_SAMPLER                   = OpenCL.CL_INVALID_SAMPLER
-const CLFFT_INVALID_IMAGE_SIZE                = OpenCL.CL_INVALID_IMAGE_SIZE
-const CLFFT_INVALID_IMAGE_FORMAT_DESCRIPTOR   = OpenCL.CL_INVALID_IMAGE_FORMAT_DESCRIPTOR
-const CLFFT_INVALID_MEM_OBJECT                = OpenCL.CL_INVALID_MEM_OBJECT
-const CLFFT_INVALID_HOST_PTR                  = OpenCL.CL_INVALID_HOST_PTR
-const CLFFT_INVALID_COMMAND_QUEUE             = OpenCL.CL_INVALID_COMMAND_QUEUE
-const CLFFT_INVALID_QUEUE_PROPERTIES          = OpenCL.CL_INVALID_QUEUE_PROPERTIES
-const CLFFT_INVALID_CONTEXT                   = OpenCL.CL_INVALID_CONTEXT
-const CLFFT_INVALID_DEVICE                    = OpenCL.CL_INVALID_DEVICE
-const CLFFT_INVALID_PLATFORM                  = OpenCL.CL_INVALID_PLATFORM
-const CLFFT_INVALID_DEVICE_TYPE               = OpenCL.CL_INVALID_DEVICE_TYPE
-const CLFFT_INVALID_VALUE                     = OpenCL.CL_INVALID_VALUE
-const CLFFT_MAP_FAILURE                       = OpenCL.CL_MAP_FAILURE
-const CLFFT_BUILD_PROGRAM_FAILURE             = OpenCL.CL_BUILD_PROGRAM_FAILURE
-const CLFFT_IMAGE_FORMAT_NOT_SUPPORTED        = OpenCL.CL_IMAGE_FORMAT_NOT_SUPPORTED
-const CLFFT_IMAGE_FORMAT_MISMATCH             = OpenCL.CL_IMAGE_FORMAT_MISMATCH
-const CLFFT_MEM_COPY_OVERLAP                  = OpenCL.CL_MEM_COPY_OVERLAP
-const CLFFT_PROFILING_INFO_NOT_AVAILABLE      = OpenCL.CL_PROFILING_INFO_NOT_AVAILABLE
-const CLFFT_OUT_OF_HOST_MEMORY                = OpenCL.CL_OUT_OF_HOST_MEMORY
-const CLFFT_OUT_OF_RESOURCES                  = OpenCL.CL_OUT_OF_RESOURCES
-const CLFFT_MEM_OBJECT_ALLOCATION_FAILURE     = OpenCL.CL_MEM_OBJECT_ALLOCATION_FAILURE
-const CLFFT_COMPILER_NOT_AVAILABLE            = OpenCL.CL_COMPILER_NOT_AVAILABLE
-const CLFFT_DEVICE_NOT_AVAILABLE              = OpenCL.CL_DEVICE_NOT_AVAILABLE
-const CLFFT_DEVICE_NOT_FOUND                  = OpenCL.CL_DEVICE_NOT_FOUND
-const CLFFT_SUCCESS                           = OpenCL.CL_SUCCESS
+const CLFFT_INVALID_GLOBAL_WORK_SIZE          = cl.CL_INVALID_GLOBAL_WORK_SIZE
+const CLFFT_INVALID_MIP_LEVEL                 = cl.CL_INVALID_MIP_LEVEL
+const CLFFT_INVALID_BUFFER_SIZE               = cl.CL_INVALID_BUFFER_SIZE
+const CLFFT_INVALID_GL_OBJECT                 = cl.CL_INVALID_GL_OBJECT
+const CLFFT_INVALID_OPERATION                 = cl.CL_INVALID_OPERATION
+const CLFFT_INVALID_EVENT                     = cl.CL_INVALID_EVENT
+const CLFFT_INVALID_EVENT_WAIT_LIST           = cl.CL_INVALID_EVENT_WAIT_LIST,
+const CLFFT_INVALID_GLOBAL_OFFSET             = cl.CL_INVALID_GLOBAL_OFFSET,
+const CLFFT_INVALID_WORK_ITEM_SIZE            = cl.CL_INVALID_WORK_ITEM_SIZE
+const CLFFT_INVALID_WORK_GROUP_SIZE           = cl.CL_INVALID_WORK_GROUP_SIZE
+const CLFFT_INVALID_WORK_DIMENSION            = cl.CL_INVALID_WORK_DIMENSION
+const CLFFT_INVALID_KERNEL_ARGS               = cl.CL_INVALID_KERNEL_ARGS
+const CLFFT_INVALID_ARG_SIZE                  = cl.CL_INVALID_ARG_SIZE
+const CLFFT_INVALID_ARG_VALUE                 = cl.CL_INVALID_ARG_VALUE
+const CLFFT_INVALID_ARG_INDEX                 = cl.CL_INVALID_ARG_INDEX
+const CLFFT_INVALID_KERNEL                    = cl.CL_INVALID_KERNEL
+const CLFFT_INVALID_KERNEL_DEFINITION         = cl.CL_INVALID_KERNEL_DEFINITION
+const CLFFT_INVALID_KERNEL_NAME               = cl.CL_INVALID_KERNEL_NAME
+const CLFFT_INVALID_PROGRAM_EXECUTABLE        = cl.CL_INVALID_PROGRAM_EXECUTABLE
+const CLFFT_INVALID_PROGRAM                   = cl.CL_INVALID_PROGRAM
+const CLFFT_INVALID_BUILD_OPTIONS             = cl.CL_INVALID_BUILD_OPTIONS
+const CLFFT_INVALID_BINARY                    = cl.CL_INVALID_BINARY
+const CLFFT_INVALID_SAMPLER                   = cl.CL_INVALID_SAMPLER
+const CLFFT_INVALID_IMAGE_SIZE                = cl.CL_INVALID_IMAGE_SIZE
+const CLFFT_INVALID_IMAGE_FORMAT_DESCRIPTOR   = cl.CL_INVALID_IMAGE_FORMAT_DESCRIPTOR
+const CLFFT_INVALID_MEM_OBJECT                = cl.CL_INVALID_MEM_OBJECT
+const CLFFT_INVALID_HOST_PTR                  = cl.CL_INVALID_HOST_PTR
+const CLFFT_INVALID_COMMAND_QUEUE             = cl.CL_INVALID_COMMAND_QUEUE
+const CLFFT_INVALID_QUEUE_PROPERTIES          = cl.CL_INVALID_QUEUE_PROPERTIES
+const CLFFT_INVALID_CONTEXT                   = cl.CL_INVALID_CONTEXT
+const CLFFT_INVALID_DEVICE                    = cl.CL_INVALID_DEVICE
+const CLFFT_INVALID_PLATFORM                  = cl.CL_INVALID_PLATFORM
+const CLFFT_INVALID_DEVICE_TYPE               = cl.CL_INVALID_DEVICE_TYPE
+const CLFFT_INVALID_VALUE                     = cl.CL_INVALID_VALUE
+const CLFFT_MAP_FAILURE                       = cl.CL_MAP_FAILURE
+const CLFFT_BUILD_PROGRAM_FAILURE             = cl.CL_BUILD_PROGRAM_FAILURE
+const CLFFT_IMAGE_FORMAT_NOT_SUPPORTED        = cl.CL_IMAGE_FORMAT_NOT_SUPPORTED
+const CLFFT_IMAGE_FORMAT_MISMATCH             = cl.CL_IMAGE_FORMAT_MISMATCH
+const CLFFT_MEM_COPY_OVERLAP                  = cl.CL_MEM_COPY_OVERLAP
+const CLFFT_PROFILING_INFO_NOT_AVAILABLE      = cl.CL_PROFILING_INFO_NOT_AVAILABLE
+const CLFFT_OUT_OF_HOST_MEMORY                = cl.CL_OUT_OF_HOST_MEMORY
+const CLFFT_OUT_OF_RESOURCES                  = cl.CL_OUT_OF_RESOURCES
+const CLFFT_MEM_OBJECT_ALLOCATION_FAILURE     = cl.CL_MEM_OBJECT_ALLOCATION_FAILURE
+const CLFFT_COMPILER_NOT_AVAILABLE            = cl.CL_COMPILER_NOT_AVAILABLE
+const CLFFT_DEVICE_NOT_AVAILABLE              = cl.CL_DEVICE_NOT_AVAILABLE
+const CLFFT_DEVICE_NOT_FOUND                  = cl.CL_DEVICE_NOT_FOUND
+const CLFFT_SUCCESS                           = cl.CL_SUCCESS
 
 const CLFFT_BUGCHECK                  = Int32(4*1024)
 const CLFFT_NOTIMPLEMENTED            = Int32(4*1024+1)  # Functionality is not implemented yet.

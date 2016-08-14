@@ -1,7 +1,6 @@
 module CLFFT
 
-import OpenCL
-const cl = OpenCL
+import OpenCL.cl
 
 include("api.jl")
 include("error.jl")
