@@ -1,8 +1,8 @@
 using FactCheck
 using Base.Test
+using Primes
 
-import OpenCL
-const cl = OpenCL
+import OpenCL.cl
 
 import CLFFT
 const clfft = CLFFT
