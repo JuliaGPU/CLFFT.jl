@@ -307,7 +307,7 @@ end
 
 scaling_factor(p::Plan, dir::Symbol) = begin
     res = Cint[0]
-    d::Cint
+    local d::Cint
     if dir == :forward
         d = Int32(-1)
     elseif dir == :backward
