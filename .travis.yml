@@ -47,7 +47,7 @@ before_script:
   - sudo make install  
   - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/library:${LD_LIBRARY_PATH}
   - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/bin/clFFT/statTimer:${LD_LIBRARY_PATH}
-
+  - cd ${TRAVIS_BUILD_DIR}
 
 after_success:
   - julia -e 'cd(Pkg.dir("CLFFT"));
