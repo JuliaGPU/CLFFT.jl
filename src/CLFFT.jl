@@ -1,5 +1,7 @@
 module CLFFT
 
+import Primes
+
 import OpenCL.cl
 
 include("api.jl")
@@ -95,7 +97,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     radices = supported_radices()
     for i in 1:ndim
         s = sz[i]
-        fs = keys(factor(s))
+        fs = keys(Primes.factor(s))
         if fs ⊆ radices
             lengths[i] = s
             total_length *= s
@@ -148,7 +150,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     radices = supported_radices()
     for i in 1:ndim
         s = insize[i]
-        fs = keys(factor(s))
+        fs = keys(Primes.factor(s))
         if fs ⊆ radices
             lengths[i] = s
             total_length *= s
