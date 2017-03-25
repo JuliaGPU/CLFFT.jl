@@ -2,50 +2,30 @@ module api
 
 import OpenCL.cl
 
-@static if is_unix() const libclfft = "libclFFT" end
-@static if is_windows() const libclfft = "clFFT" end
-
+depsfile = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
+if isfile(depsfile)
+    include(depsfile)
+else
+    error("CLFFT not properly installed. Please run Pkg.build(\"CLFFT\") then restart Julia.") # now that this is decoupled from images, should this be an error?
+end
 
 macro clfft(func, arg_types)
     local args_in  = Symbol[Symbol("arg$i::$T")
                             for (i, T) in enumerate(arg_types.args)]
     local funcname = Symbol("clfft$func")
     @eval begin
-        $(funcname)($(args_in...)) = ccall(($(string(funcname)), libclfft),
+        $(funcname)($(args_in...)) = ccall(($(string(funcname)), libCLFFT),
                                                  cl.CL_int, #clfftStatus
                                                  $arg_types,
                                                  $(args_in...))
     end
 end
 
-type SetupData
+immutable SetupData
     major::cl.CL_uint
     minor::cl.CL_uint
     patch::cl.CL_uint
     debug_flags::cl.CL_ulong
-
-    function SetupData(major::Integer,
-                       minor::Integer,
-                       patch::Integer,
-                       debug_flags::Integer)
-        d = new(cl.cl_uint(major),
-                cl.cl_uint(minor),
-                cl.cl_uint(patch),
-                cl.cl_ulong(debug_flags))
-        setup = [d]
-        error = clfftSetup(setup)
-        if error != CLFFT_SUCCESS
-            error("Failed to setup CLFFT Library")
-        end
-        finalizer(d, x -> begin
-            # gc'ing before teardown
-            # helps prevent a double-free event for Plan objects
-            # A kludge to enforce gc order.
-            Base.gc()
-            clfftTeardown()
-        end)
-        return d
-    end
 end
 
 
