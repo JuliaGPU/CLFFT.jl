@@ -17,8 +17,9 @@ immutable CLFFTError
     end
 end
 
-Base.show(io::IO, err::CLFFTError) =
-        Base.print(io, "CLFFTError(code=$(err.code), :$(err.desc))")
+function Base.show(io::IO, err::CLFFTError)
+    Base.print(io, "CLFFTError(code=$(err.code), :$(err.desc))")
+end
 
 macro check(clfftFunc)
     quote
@@ -31,30 +32,23 @@ macro check(clfftFunc)
     end
 end
 
-version() = begin
-    major = cl.CL_uint[0]
-    minor = cl.CL_uint[0]
-    patch = cl.CL_uint[0]
+function version()
+    major = Ref{cl.CL_uint}(0)
+    minor = Ref{cl.CL_uint}(0)
+    patch = Ref{cl.CL_uint}(0)
     api.clfftGetVersion(major, minor, patch)
-    return VersionNumber(Int(major[1]), Int(minor[1]), Int(patch[1]))
+    return VersionNumber(Int(major[]), Int(minor[]), Int(patch[]))
 end
 
 function supported_radices()
-  v = version()
-  radices = [2,3,5]
-  v ≥ v"2.8.0"  && push!(radices, 7)
-  v ≥ v"2.12.0" && push!(radices, 11, 13)
-
-  radices
-end
-
-# Module level library handle,
-# when module is GC'd, the finalizer for SetupData is
-# called to teardown the library state
-const __handle = begin
     v = version()
-    api.SetupData(v.major, v.minor, v.patch, 0)
+    radices = [2,3,5]
+    v ≥ v"2.8.0"  && push!(radices, 7)
+    v ≥ v"2.12.0" && push!(radices, 11, 13)
+
+    radices
 end
+
 
 # clFFT floating-point types:
 typealias clfftNumber Union{Float64,Float32,Complex128,Complex64}
@@ -478,7 +472,10 @@ bake!(p::Plan, qs::Vector{cl.CmdQueue}) = begin
     @check api.clfftBakePlan(p.id[1], nqueues, q_ids, C_NULL, C_NULL)
     return p
 end
-bake!(p::Plan, q::cl.CmdQueue) = bake!(p, [q])
+function bake!(p::Plan, q::cl.CmdQueue)
+    qref = [q]
+    bake!(p, qref)
+end
 
 
 function enqueue_transform{T<:clfftNumber}(p::Plan,
@@ -523,4 +520,15 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
     return [cl.Event(e_id) for e_id in out_evts]
 end
 
+
+function __init__()
+    v = version()
+    d = api.SetupData(v.major, v.minor, v.patch, 0)
+    setup = Ref(d)
+    error = api.clfftSetup(setup)
+    if error != api.CLFFT_SUCCESS
+        error("Failed to setup CLFFT Library")
+    end
+    atexit(api.clfftTeardown)
+end
 end # module
