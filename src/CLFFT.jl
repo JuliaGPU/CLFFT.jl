@@ -61,23 +61,25 @@ typealias clfftTypeSingle Union{Type{Float32},Type{Complex64}}
 
 typealias PlanHandle Csize_t
 
-
-type Plan{T<:clfftNumber}
+function free(x) end
+type Plan{T <: clfftNumber}
     # boxed handle (most api functions need address, setup/teardown need pointer)
     id::Array{PlanHandle,1}
 
-    function Plan(plan::Array{PlanHandle,1})
+    function Plan(plan::Array{PlanHandle, 1})
         p = new(plan)
-        finalizer(p, x -> begin
-            if x.id[1] != C_NULL
-                @check api.clfftDestroyPlan(x.id)
-            end
-            x.id[1] = C_NULL
-        end)
+        finalizer(p, free)
         return p
     end
 end
+const global is_initialized = Ref(false)
 
+function free(x::Plan)
+    if x.id[1] != 0 && is_initialized[]
+        @check api.clfftDestroyPlan(x.id)
+    end
+    x.id[1] = 0
+end
 
 function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     if length(sz) > 3
@@ -483,8 +485,8 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
                                            qs::Vector{cl.CmdQueue},
                                            input::cl.Buffer{T},
                                            output::Union{Void,cl.Buffer{T}};
-                                           wait_for::Union{Void,Vector{cl.Event}}=nothing,
-                                           tmp::Union{Void,cl.Buffer{T}}=nothing)
+                                           wait_for::Union{Void,Vector{cl.Event}} = nothing,
+                                           tmp::Union{Void,cl.Buffer{T}} = nothing)
     if dir != :forward && dir != :backward
         throw(ArgumentError("Unknown direction $dir"))
     end
@@ -530,6 +532,10 @@ function __init__()
     if error != api.CLFFT_SUCCESS
         error("Failed to setup CLFFT Library")
     end
-    atexit(api.clfftTeardown)
+    is_initialized[] = true
+    atexit() do
+        api.clfftTeardown()
+        is_initialized[] = false
+    end
 end
 end # module
