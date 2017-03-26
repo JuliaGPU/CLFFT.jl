@@ -1,7 +1,7 @@
 module CLFFT
 
 import OpenCL.cl
-
+using Primes
 include("api.jl")
 include("error.jl")
 
@@ -519,6 +519,7 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
                               tmp_buffer)
     return [cl.Event(e_id) for e_id in out_evts]
 end
+
 
 
 function __init__()
