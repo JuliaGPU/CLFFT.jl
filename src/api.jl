@@ -6,7 +6,7 @@ depsfile = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
 if isfile(depsfile)
     include(depsfile)
 else
-    error("CLFFT not properly installed. Please run Pkg.build(\"CLFFT\") then restart Julia.") # now that this is decoupled from images, should this be an error?
+    error("CLFFT not properly installed. Please run Pkg.build(\"CLFFT\") then restart Julia.")
 end
 
 macro clfft(func, arg_types)
