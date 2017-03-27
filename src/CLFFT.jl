@@ -24,7 +24,7 @@ end
 macro check(clfftFunc)
     quote
         local err::Cint
-        err = $clfftFunc
+        err = $(esc(clfftFunc))
         if err != api.CLFFT_SUCCESS
             throw(CLFFTError(err))
         end
@@ -362,7 +362,7 @@ end
 set_lengths!(p::Plan, dims::Dims) = begin
     ndim = length(dims)
     @assert ndim <= 3
-    nd = Array(Csize_t, ndim)
+    nd = Vector{Csize_t}(ndim)
     for (i, d) in enumerate(dims)
         nd[i] = d
     end
@@ -373,7 +373,7 @@ end
 
 lengths(p::Plan) = begin
     d = dim(p)
-    res = Array(Csize_t, d)
+    res = Vector{Csize_t}(d)
     @check api.clfftGetPlanLength(p.id[1], Int32(d), res)
     return map(Int, res)
 end
@@ -381,7 +381,7 @@ end
 
 instride(p::Plan) = begin
     d = dim(p)
-    res = Array(Csize_t, d)
+    res = Vector{Csize_t}(d)
     @check api.clfftGetPlanInStride(p.id[1], Int32(d), res)
     return map(Int, res)
 end
@@ -398,7 +398,7 @@ end
 
 outstride(p::Plan) = begin
     d = dim(p)
-    res = Array(Csize_t, d)
+    res = Vector{Csize_t}(d)
     @check api.clfftGetPlanOutStride(p.id[1], Int32(d), res)
     return map(Int, res)
 end
@@ -503,7 +503,7 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
         evt_ids = [evt.id for evt in wait_for]
     end
     nqueues = length(q_ids)
-    out_evts = Array(cl.CL_event, nqueues)
+    out_evts = Vector{cl.CL_event}(nqueues)
     tmp_buffer = C_NULL
     if tmp != nothing
         tmp_buff_id = [tmp.id]
