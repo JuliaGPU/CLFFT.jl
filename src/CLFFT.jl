@@ -1,7 +1,7 @@
 module CLFFT
 
 import OpenCL.cl
-
+using Primes
 include("api.jl")
 include("error.jl")
 
@@ -17,13 +17,14 @@ immutable CLFFTError
     end
 end
 
-Base.show(io::IO, err::CLFFTError) =
-        Base.print(io, "CLFFTError(code=$(err.code), :$(err.desc))")
+function Base.show(io::IO, err::CLFFTError)
+    Base.print(io, "CLFFTError(code=$(err.code), :$(err.desc))")
+end
 
 macro check(clfftFunc)
     quote
         local err::Cint
-        err = $clfftFunc
+        err = $(esc(clfftFunc))
         if err != api.CLFFT_SUCCESS
             throw(CLFFTError(err))
         end
@@ -31,30 +32,23 @@ macro check(clfftFunc)
     end
 end
 
-version() = begin
-    major = cl.CL_uint[0]
-    minor = cl.CL_uint[0]
-    patch = cl.CL_uint[0]
+function version()
+    major = Ref{cl.CL_uint}(0)
+    minor = Ref{cl.CL_uint}(0)
+    patch = Ref{cl.CL_uint}(0)
     api.clfftGetVersion(major, minor, patch)
-    return VersionNumber(Int(major[1]), Int(minor[1]), Int(patch[1]))
+    return VersionNumber(Int(major[]), Int(minor[]), Int(patch[]))
 end
 
 function supported_radices()
-  v = version()
-  radices = [2,3,5]
-  v ≥ v"2.8.0"  && push!(radices, 7)
-  v ≥ v"2.12.0" && push!(radices, 11, 13)
-
-  radices
-end
-
-# Module level library handle,
-# when module is GC'd, the finalizer for SetupData is
-# called to teardown the library state
-const __handle = begin
     v = version()
-    api.SetupData(v.major, v.minor, v.patch, 0)
+    radices = [2,3,5]
+    v ≥ v"2.8.0"  && push!(radices, 7)
+    v ≥ v"2.12.0" && push!(radices, 11, 13)
+
+    radices
 end
+
 
 # clFFT floating-point types:
 typealias clfftNumber Union{Float64,Float32,Complex128,Complex64}
@@ -67,23 +61,25 @@ typealias clfftTypeSingle Union{Type{Float32},Type{Complex64}}
 
 typealias PlanHandle Csize_t
 
-
-type Plan{T<:clfftNumber}
+function free(x) end
+type Plan{T <: clfftNumber}
     # boxed handle (most api functions need address, setup/teardown need pointer)
     id::Array{PlanHandle,1}
 
-    function Plan(plan::Array{PlanHandle,1})
+    function Plan(plan::Array{PlanHandle, 1})
         p = new(plan)
-        finalizer(p, x -> begin
-            if x.id[1] != C_NULL
-                @check api.clfftDestroyPlan(x.id)
-            end
-            x.id[1] = C_NULL
-        end)
+        finalizer(p, free)
         return p
     end
 end
+const global is_initialized = Ref(false)
 
+function free(x::Plan)
+    if x.id[1] != 0 && is_initialized[]
+        @check api.clfftDestroyPlan(x.id)
+    end
+    x.id[1] = 0
+end
 
 function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     if length(sz) > 3
@@ -366,7 +362,7 @@ end
 set_lengths!(p::Plan, dims::Dims) = begin
     ndim = length(dims)
     @assert ndim <= 3
-    nd = Array(Csize_t, ndim)
+    nd = Vector{Csize_t}(ndim)
     for (i, d) in enumerate(dims)
         nd[i] = d
     end
@@ -377,7 +373,7 @@ end
 
 lengths(p::Plan) = begin
     d = dim(p)
-    res = Array(Csize_t, d)
+    res = Vector{Csize_t}(d)
     @check api.clfftGetPlanLength(p.id[1], Int32(d), res)
     return map(Int, res)
 end
@@ -385,7 +381,7 @@ end
 
 instride(p::Plan) = begin
     d = dim(p)
-    res = Array(Csize_t, d)
+    res = Vector{Csize_t}(d)
     @check api.clfftGetPlanInStride(p.id[1], Int32(d), res)
     return map(Int, res)
 end
@@ -402,7 +398,7 @@ end
 
 outstride(p::Plan) = begin
     d = dim(p)
-    res = Array(Csize_t, d)
+    res = Vector{Csize_t}(d)
     @check api.clfftGetPlanOutStride(p.id[1], Int32(d), res)
     return map(Int, res)
 end
@@ -478,7 +474,10 @@ bake!(p::Plan, qs::Vector{cl.CmdQueue}) = begin
     @check api.clfftBakePlan(p.id[1], nqueues, q_ids, C_NULL, C_NULL)
     return p
 end
-bake!(p::Plan, q::cl.CmdQueue) = bake!(p, [q])
+function bake!(p::Plan, q::cl.CmdQueue)
+    qref = [q]
+    bake!(p, qref)
+end
 
 
 function enqueue_transform{T<:clfftNumber}(p::Plan,
@@ -486,8 +485,8 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
                                            qs::Vector{cl.CmdQueue},
                                            input::cl.Buffer{T},
                                            output::Union{Void,cl.Buffer{T}};
-                                           wait_for::Union{Void,Vector{cl.Event}}=nothing,
-                                           tmp::Union{Void,cl.Buffer{T}}=nothing)
+                                           wait_for::Union{Void,Vector{cl.Event}} = nothing,
+                                           tmp::Union{Void,cl.Buffer{T}} = nothing)
     if dir != :forward && dir != :backward
         throw(ArgumentError("Unknown direction $dir"))
     end
@@ -504,7 +503,7 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
         evt_ids = [evt.id for evt in wait_for]
     end
     nqueues = length(q_ids)
-    out_evts = Array(cl.CL_event, nqueues)
+    out_evts = Vector{cl.CL_event}(nqueues)
     tmp_buffer = C_NULL
     if tmp != nothing
         tmp_buff_id = [tmp.id]
@@ -523,4 +522,20 @@ function enqueue_transform{T<:clfftNumber}(p::Plan,
     return [cl.Event(e_id) for e_id in out_evts]
 end
 
+
+
+function __init__()
+    v = version()
+    d = api.SetupData(v.major, v.minor, v.patch, 0)
+    setup = Ref(d)
+    error = api.clfftSetup(setup)
+    if error != api.CLFFT_SUCCESS
+        error("Failed to setup CLFFT Library")
+    end
+    is_initialized[] = true
+    atexit() do
+        api.clfftTeardown()
+        is_initialized[] = false
+    end
+end
 end # module

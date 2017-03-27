@@ -62,7 +62,7 @@ facts("Version") do
 end
 
 ## NOTE: the following 2 tests FAIL, testing/fixing is highly welcome
-## 
+##
 ## facts("Plan") do
 ##     context("Constructor") do
 ##         ctx = cl.create_some_context()
@@ -169,7 +169,7 @@ facts("Example FFT Double") do
 end
 
 facts("2D FFT Inplace") do
-    transform_sizes = [2^6,]#3^4, 5^3]
+    transform_sizes = (2^6,)#3^4, 5^3
     for N in transform_sizes
         for M in transform_sizes
             @show (N, M)
