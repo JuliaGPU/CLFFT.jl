@@ -6,6 +6,7 @@ libnames = ["libCLFFT", "clFFT", "libclFFT"]
 libCLFFT = library_dependency("libCLFFT", aliases = libnames)
 version = "2.12.2"
 baseurl = "https://github.com/clMathLibraries/clFFT/releases/download/v$(version)/clFFT-$(version)-"
+
 # download a pre-compiled binary (built by GLFW)
 if is_windows()
     if Sys.ARCH == :x86_64
@@ -33,6 +34,7 @@ if is_linux()
         )
     end
 end
+
 if is_apple()
     error("""
         OSX not oficially supported.
