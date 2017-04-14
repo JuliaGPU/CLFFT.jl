@@ -11,7 +11,7 @@ baseurl = "https://github.com/clMathLibraries/clFFT/releases/download/v$(version
 if is_windows()
     if Sys.ARCH == :x86_64
         uri = URI(baseurl * "Windows-x64.zip")
-        basedir = joinpath(@__DIR__, "$(version)-Windows-x64")
+        basedir = joinpath(@__DIR__, "clFFT-$(version)-Windows-x64")
         provides(
             Binaries, uri,
             libCLFFT, unpacked_dir = basedir,
