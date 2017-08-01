@@ -321,7 +321,7 @@ end
 set_scaling_factor!(p::Plan, dir::Symbol, f::AbstractFloat) = begin
     if dir == :forward
         d = Int32(-1)
-    elseif d == :backward
+    elseif dir == :backward
         d = Int32(1)
     else
         error("undefined")
