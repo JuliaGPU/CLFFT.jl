@@ -1,3 +1,4 @@
+__precompile__(true)
 module CLFFT
 
 import OpenCL.cl
@@ -51,23 +52,23 @@ end
 
 
 # clFFT floating-point types:
-typealias clfftNumber Union{Float64,Float32,Complex128,Complex64}
-typealias clfftReal Union{Float64,Float32}
-typealias clfftComplex Union{Complex128,Complex64}
-typealias clfftDouble Union{Float64,Complex128}
-typealias clfftSingle Union{Float32,Complex64}
-typealias clfftTypeDouble Union{Type{Float64},Type{Complex128}}
-typealias clfftTypeSingle Union{Type{Float32},Type{Complex64}}
+const clfftNumber = Union{Float64,Float32,Complex128,Complex64}
+const clfftReal = Union{Float64,Float32}
+const clfftComplex = Union{Complex128,Complex64}
+const clfftDouble = Union{Float64,Complex128}
+const clfftSingle = Union{Float32,Complex64}
+const clfftTypeDouble = Union{Type{Float64},Type{Complex128}}
+const clfftTypeSingle = Union{Type{Float32},Type{Complex64}}
 
-typealias PlanHandle Csize_t
+const PlanHandle = Csize_t
 
 function free(x) end
 type Plan{T <: clfftNumber}
     # boxed handle (most api functions need address, setup/teardown need pointer)
     id::Array{PlanHandle,1}
 
-    function Plan(plan::Array{PlanHandle, 1})
-        p = new(plan)
+    function (::Type{Plan{T}}){T}(plan::Array{PlanHandle, 1})
+        p = new{T}(plan)
         finalizer(p, free)
         return p
     end
@@ -320,12 +321,12 @@ end
 set_scaling_factor!(p::Plan, dir::Symbol, f::AbstractFloat) = begin
     if dir == :forward
         d = Int32(-1)
-    elseif d == :backward
+    elseif dir == :backward
         d = Int32(1)
     else
         error("undefined")
     end
-    @check api.clfftsetPlanScale(p.id[1], d, float32(f))
+    @check api.clfftSetPlanScale(p.id[1], d, Float32(f))
     return p
 end
 
@@ -462,7 +463,7 @@ end
 
 
 context(p::Plan) = begin
-    res = Array(cl.CL_context)
+    res = Vector{cl.CL_context}(1)
     @check api.clfftGetPlanContext(p.id[1], res)
     return cl.Context(res[1])
 end

@@ -29,16 +29,16 @@ immutable SetupData
 end
 
 
-typealias PlanHandle Csize_t
-typealias Callback   Ptr{Void}
-typealias UserData   Ptr{Void}
+const PlanHandle = Csize_t
+const Callback =   Ptr{Void}
+const UserData =   Ptr{Void}
 
-typealias Precision  Cint
-typealias Dim        Cint
-typealias Direction  Cint
-typealias Layout     Cint
-typealias ResultLocation   Cint
-typealias ResultTransposed Cint
+const Precision =  Cint
+const Dim =        Cint
+const Direction =  Cint
+const Layout =     Cint
+const ResultLocation =   Cint
+const ResultTransposed = Cint
 
 clfft_dim(x) = convert(Dim, x)
 clfft_direction(x) = convert(Direction, x)
