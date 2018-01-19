@@ -30,7 +30,7 @@ if is_linux()
         provides(
             Binaries, uri,
             libCLFFT, unpacked_dir = basedir,
-            installed_libpath = joinpath(basedir, "bin"), os = :Linux
+            installed_libpath = joinpath(basedir, "lib64"), os = :Linux
         )
     end
 end
