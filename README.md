@@ -1,7 +1,9 @@
 # CLFFT
 
-[![Build Status](https://travis-ci.org/JuliaGPU/CLFFT.jl.png)](https://travis-ci.org/JuliaGPU/CLFFT.jl)
-[![Coverage Status](https://img.shields.io/coveralls/JuliaGPU/CLFFT.jl.svg)](https://coveralls.io/r/JuliaGPU/CLFFT.jl)
+**Build status**: [![][gitlab-img]][gitlab-url]
+
+[gitlab-img]: https://gitlab.com/JuliaGPU/CLFFT.jl/badges/master/pipeline.svg
+[gitlab-url]: https://gitlab.com/JuliaGPU/CLFFT.jl/pipelines
 
 Julia bindings to AMD's clFFT library
 
