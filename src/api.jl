@@ -21,7 +21,7 @@ macro clfft(func, arg_types)
     end
 end
 
-immutable SetupData
+struct SetupData
     major::cl.CL_uint
     minor::cl.CL_uint
     patch::cl.CL_uint
@@ -30,8 +30,8 @@ end
 
 
 const PlanHandle = Csize_t
-const Callback =   Ptr{Void}
-const UserData =   Ptr{Void}
+const Callback =   Ptr{Nothing}
+const UserData =   Ptr{Nothing}
 
 const Precision =  Cint
 const Dim =        Cint

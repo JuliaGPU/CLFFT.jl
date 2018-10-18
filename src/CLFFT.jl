@@ -9,7 +9,7 @@ include("error.jl")
 const SP_MAX_LEN = 1 << 24
 const DP_MAX_LEN = 1 << 22
 
-immutable CLFFTError
+struct CLFFTError
     code::Int
     desc::Symbol
     function CLFFTError(c::Integer)
@@ -52,22 +52,22 @@ end
 
 
 # clFFT floating-point types:
-const clfftNumber = Union{Float64,Float32,Complex128,Complex64}
+const clfftNumber = Union{Float64,Float32,ComplexF64,ComplexF32}
 const clfftReal = Union{Float64,Float32}
-const clfftComplex = Union{Complex128,Complex64}
-const clfftDouble = Union{Float64,Complex128}
-const clfftSingle = Union{Float32,Complex64}
-const clfftTypeDouble = Union{Type{Float64},Type{Complex128}}
-const clfftTypeSingle = Union{Type{Float32},Type{Complex64}}
+const clfftComplex = Union{ComplexF64,ComplexF32}
+const clfftDouble = Union{Float64,ComplexF64}
+const clfftSingle = Union{Float32,ComplexF32}
+const clfftTypeDouble = Union{Type{Float64},Type{ComplexF64}}
+const clfftTypeSingle = Union{Type{Float32},Type{ComplexF32}}
 
 const PlanHandle = Csize_t
 
 function free(x) end
-type Plan{T <: clfftNumber}
+mutable struct Plan{T <: clfftNumber}
     # boxed handle (most api functions need address, setup/teardown need pointer)
     id::Array{PlanHandle,1}
 
-    function (::Type{Plan{T}}){T}(plan::Array{PlanHandle, 1})
+    function (::Type{Plan{T}})(plan::Array{PlanHandle, 1}) where {T<:clfftNumber}
         p = new{T}(plan)
         finalizer(p, free)
         return p
@@ -82,7 +82,7 @@ function free(x::Plan)
     x.id[1] = 0
 end
 
-function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
+function Plan(::Type{T}, ctx::cl.Context, sz::Dims) where {T<:clfftNumber}
     if length(sz) > 3
         throw(ArgumentError("Plans can have dimensions of 1,2 or 3"))
     end
@@ -130,8 +130,8 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, sz::Dims)
     return Plan{T}(ph)
 end
 
-function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
-                              input::StridedArray{T}, region)
+function Plan(::Type{T}, ctx::cl.Context,
+              input::StridedArray{T}, region) where {T<:clfftNumber}
     ndim = length(region)
     if ndim > 3
         throw(ArgumentError("Plans can have dimensions of 1, 2, or 3"))
@@ -197,7 +197,7 @@ function Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context,
     return plan
 end
 
-Plan{T<:clfftNumber}(::Type{T}, ctx::cl.Context, input::StridedArray{T}) =
+Plan(::Type{T}, ctx::cl.Context, input::StridedArray{T}) where {T<:clfftNumber} =
         Plan(T, ctx, input, 1:ndims(input))
 
 precision(p::Plan) = begin
@@ -481,13 +481,13 @@ function bake!(p::Plan, q::cl.CmdQueue)
 end
 
 
-function enqueue_transform{T<:clfftNumber}(p::Plan,
-                                           dir::Symbol,
-                                           qs::Vector{cl.CmdQueue},
-                                           input::cl.Buffer{T},
-                                           output::Union{Void,cl.Buffer{T}};
-                                           wait_for::Union{Void,Vector{cl.Event}} = nothing,
-                                           tmp::Union{Void,cl.Buffer{T}} = nothing)
+function enqueue_transform(p::Plan,
+                           dir::Symbol,
+                           qs::Vector{cl.CmdQueue},
+                           input::cl.Buffer{T},
+                           output::Union{Nothing,cl.Buffer{T}};
+                           wait_for::Union{Nothing,Vector{cl.Event}} = nothing,
+                           tmp::Union{Nothing,cl.Buffer{T}} = nothing) where {T<:clfftNumber}
     if dir != :forward && dir != :backward
         throw(ArgumentError("Unknown direction $dir"))
     end
