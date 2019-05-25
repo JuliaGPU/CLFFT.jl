@@ -1,5 +1,6 @@
-using Base.Test
+using Test
 using Primes
+using FFTW
 
 import OpenCL.cl
 
@@ -10,7 +11,7 @@ const clfft = CLFFT
 
 const TOLERANCE = 1e-3
 
-function allclose{T}(x::AbstractArray{T}, y::AbstractArray{T}; rtol=1e-5, atol=1e-8)
+function allclose(x::AbstractArray{T}, y::AbstractArray{T}; rtol=1e-5, atol=1e-8) where {T}
     @assert length(x) == length(y)
     @inbounds begin
         for i in length(x)
@@ -24,7 +25,7 @@ function allclose{T}(x::AbstractArray{T}, y::AbstractArray{T}; rtol=1e-5, atol=1
 end
 
 #Note: these functions have been adapted from the clFFT tests (buffer.h)
-function floats_about_equal{T<:clfft.clfftNumber}(a::T, b::T)
+function floats_about_equal(a::T, b::T) where {T<:clfft.clfftNumber}
     tol  = convert(T, TOLERANCE)
     comp = 1e-5
     if T <: Real
@@ -38,7 +39,7 @@ function floats_about_equal{T<:clfft.clfftNumber}(a::T, b::T)
     end
 end
 
-function allclose_clfft{T<:clfft.clfftNumber}(x::AbstractArray{T}, y::AbstractArray{T})
+function allclose_clfft(x::AbstractArray{T}, y::AbstractArray{T}) where {T<:clfft.clfftNumber}
     @assert length(x) == length(y)
     @inbounds begin
         for i in length(x)
@@ -63,13 +64,13 @@ end
 
     @testset "Example FFT Single" begin
         for N in (2^8,)# 3^7, 5^6]
-            X = rand(Complex64, N)
+            X = rand(ComplexF32, N)
             fftw_X = fft(X)
             for device in cl.devices()
                 ctx = cl.Context(device)
                 queue = cl.CmdQueue(ctx)
-                bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
-                p = clfft.Plan(Complex64, ctx, size(X))
+                bufX = cl.Buffer(ComplexF32, ctx, :copy, hostbuf=X)
+                p = clfft.Plan(ComplexF32, ctx, size(X))
                 clfft.set_layout!(p, :interleaved, :interleaved)
                 clfft.set_result!(p, :inplace)
                 clfft.bake!(p, queue)
@@ -98,13 +99,13 @@ end
 
     @testset "Example FFT Double" begin
         for N in (2^7,)# 3^6, 5^5]
-            X = rand(Complex128, N)
+            X = rand(ComplexF64, N)
             fftw_X = fft(X)
             for device in cl.devices()
                 ctx = cl.Context(device)
                 queue = cl.CmdQueue(ctx)
-                bufX = cl.Buffer(Complex128, ctx, :copy, hostbuf=X)
-                p = clfft.Plan(Complex128, ctx, size(X))
+                bufX = cl.Buffer(ComplexF64, ctx, :copy, hostbuf=X)
+                p = clfft.Plan(ComplexF64, ctx, size(X))
                 clfft.set_layout!(p, :interleaved, :interleaved)
                 clfft.set_result!(p, :inplace)
                 clfft.bake!(p, queue)
@@ -135,14 +136,14 @@ end
         transform_sizes = (2^6,)#3^4, 5^3
         for N in transform_sizes
             for M in transform_sizes
-                X = rand(Complex64, (N, M))
+                X = rand(ComplexF32, (N, M))
                 fftw_X = fft(X)
                 for device in cl.devices()
                     ctx = cl.Context(device)
                     queue = cl.CmdQueue(ctx)
-                    p = clfft.Plan(Complex64, ctx, X)
+                    p = clfft.Plan(ComplexF32, ctx, X)
                     clfft.bake!(p, queue)
-                    bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
+                    bufX = cl.Buffer(ComplexF32, ctx, :copy, hostbuf=X)
                     clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
                     R = reshape(cl.read(queue, bufX), size(X))
                     @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
@@ -154,15 +155,15 @@ end
     end
 
     @testset "3D FFT Inplace" begin
-        const N = 64
-        X = rand(Complex64, (N, N, N))
+        N = 64
+        X = rand(ComplexF32, (N, N, N))
         fftw_X = fft(X)
         for device in cl.devices()
             ctx = cl.Context(device)
             queue = cl.CmdQueue(ctx)
-            p = clfft.Plan(Complex64, ctx, X)
+            p = clfft.Plan(ComplexF32, ctx, X)
             clfft.bake!(p, queue)
-            bufX = cl.Buffer(Complex64, ctx, :copy, hostbuf=X)
+            bufX = cl.Buffer(ComplexF32, ctx, :copy, hostbuf=X)
             clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
             R = reshape(cl.read(queue, bufX), size(X))
             @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
