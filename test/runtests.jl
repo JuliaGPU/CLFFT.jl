@@ -67,32 +67,34 @@ end
             X = rand(ComplexF32, N)
             fftw_X = fft(X)
             for device in cl.devices()
-                ctx = cl.Context(device)
-                queue = cl.CmdQueue(ctx)
-                bufX = cl.Buffer(ComplexF32, ctx, :copy, hostbuf=X)
-                p = clfft.Plan(ComplexF32, ctx, size(X))
-                clfft.set_layout!(p, :interleaved, :interleaved)
-                clfft.set_result!(p, :inplace)
-                clfft.bake!(p, queue)
+                @testset "$(device[:name])" begin
+                    ctx = cl.Context(device)
+                    queue = cl.CmdQueue(ctx)
+                    bufX = cl.Buffer(ComplexF32, ctx, :copy, hostbuf=X)
+                    p = clfft.Plan(ComplexF32, ctx, size(X))
+                    clfft.set_layout!(p, :interleaved, :interleaved)
+                    clfft.set_result!(p, :inplace)
+                    clfft.bake!(p, queue)
 
-                @test clfft.context(p) == ctx
-                @test clfft.precision(p) == :single
-                @test clfft.layout(p) == (:interleaved, :interleaved)
-                @test clfft.result(p) == :inplace
-                @test clfft.dim(p) == 1
-                @test length(clfft.lengths(p)) == 1
-                @test clfft.lengths(p)[1] == length(X)
-                @test clfft.transpose_result(p) == false
+                    @test clfft.context(p) == ctx
+                    @test clfft.precision(p) == :single
+                    @test clfft.layout(p) == (:interleaved, :interleaved)
+                    @test clfft.result(p) == :inplace
+                    @test clfft.dim(p) == 1
+                    @test length(clfft.lengths(p)) == 1
+                    @test clfft.lengths(p)[1] == length(X)
+                    @test clfft.transpose_result(p) == false
 
-                @test clfft.scaling_factor(p, :forward) == Float32(1.0)
-                @test clfft.scaling_factor(p, :backward) == Float32(1.0 / length(X))
-                @test clfft.batchsize(p) == 1
+                    @test clfft.scaling_factor(p, :forward) == Float32(1.0)
+                    @test clfft.scaling_factor(p, :backward) == Float32(1.0 / length(X))
+                    @test clfft.batchsize(p) == 1
 
-                clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
-                # read is blocking (waits on pending event for result)
-                R = cl.read(queue, bufX)
-                @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
-                @test allclose_clfft(R, fftw_X)
+                    clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
+                    # read is blocking (waits on pending event for result)
+                    R = cl.read(queue, bufX)
+                    @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
+                    @test allclose_clfft(R, fftw_X)
+                end
             end
         end
     end
@@ -102,32 +104,33 @@ end
             X = rand(ComplexF64, N)
             fftw_X = fft(X)
             for device in cl.devices()
-                ctx = cl.Context(device)
-                queue = cl.CmdQueue(ctx)
-                bufX = cl.Buffer(ComplexF64, ctx, :copy, hostbuf=X)
-                p = clfft.Plan(ComplexF64, ctx, size(X))
-                clfft.set_layout!(p, :interleaved, :interleaved)
-                clfft.set_result!(p, :inplace)
-                clfft.bake!(p, queue)
+                @testset "$(device[:name])" begin
+                    ctx = cl.Context(device)
+                    queue = cl.CmdQueue(ctx)
+                    bufX = cl.Buffer(ComplexF64, ctx, :copy, hostbuf=X)
+                    p = clfft.Plan(ComplexF64, ctx, size(X))
+                    clfft.set_layout!(p, :interleaved, :interleaved)
+                    clfft.set_result!(p, :inplace)
+                    clfft.bake!(p, queue)
 
-                @test clfft.context(p) == ctx
-                @test clfft.precision(p) == :double
-                @test clfft.layout(p) == (:interleaved, :interleaved)
-                @test clfft.result(p) == :inplace
-                @test clfft.dim(p) == 1
-                @test length(clfft.lengths(p)) == 1
-                @test clfft.lengths(p)[1] == length(X)
-                @test clfft.transpose_result(p) == false
+                    @test clfft.context(p) == ctx
+                    @test clfft.precision(p) == :double
+                    @test clfft.layout(p) == (:interleaved, :interleaved)
+                    @test clfft.result(p) == :inplace
+                    @test clfft.dim(p) == 1
+                    @test length(clfft.lengths(p)) == 1
+                    @test clfft.lengths(p)[1] == length(X)
+                    @test clfft.transpose_result(p) == false
 
-                @test clfft.scaling_factor(p, :forward) == Float32(1.0)
-                @test clfft.scaling_factor(p, :backward) == Float32(1.0 / length(X))
-                @test clfft.batchsize(p) == 1
+                    @test clfft.scaling_factor(p, :forward) == Float32(1.0)
+                    @test clfft.scaling_factor(p, :backward) == Float32(1.0 / length(X))
+                    @test clfft.batchsize(p) == 1
 
-                clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
-                R = cl.read(queue, bufX)
-                @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
-                @test allclose_clfft(R, fftw_X)
-
+                    clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
+                    R = cl.read(queue, bufX)
+                    @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
+                    @test allclose_clfft(R, fftw_X)
+                end
             end
         end
     end
@@ -139,16 +142,18 @@ end
                 X = rand(ComplexF32, (N, M))
                 fftw_X = fft(X)
                 for device in cl.devices()
-                    ctx = cl.Context(device)
-                    queue = cl.CmdQueue(ctx)
-                    p = clfft.Plan(ComplexF32, ctx, X)
-                    clfft.bake!(p, queue)
-                    bufX = cl.Buffer(ComplexF32, ctx, :copy, hostbuf=X)
-                    clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
-                    R = reshape(cl.read(queue, bufX), size(X))
-                    @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
-                    @test allclose_clfft(R, fftw_X)
-                    Base.gc()
+                    @testset "$(device[:name])" begin
+                        ctx = cl.Context(device)
+                        queue = cl.CmdQueue(ctx)
+                        p = clfft.Plan(ComplexF32, ctx, X)
+                        clfft.bake!(p, queue)
+                        bufX = cl.Buffer(ComplexF32, ctx, :copy, hostbuf=X)
+                        clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
+                        R = reshape(cl.read(queue, bufX), size(X))
+                        @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
+                        @test allclose_clfft(R, fftw_X)
+                        GC.gc()
+                    end
                 end
             end
         end
@@ -159,16 +164,18 @@ end
         X = rand(ComplexF32, (N, N, N))
         fftw_X = fft(X)
         for device in cl.devices()
-            ctx = cl.Context(device)
-            queue = cl.CmdQueue(ctx)
-            p = clfft.Plan(ComplexF32, ctx, X)
-            clfft.bake!(p, queue)
-            bufX = cl.Buffer(ComplexF32, ctx, :copy, hostbuf=X)
-            clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
-            R = reshape(cl.read(queue, bufX), size(X))
-            @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
-            @test allclose_clfft(R, fftw_X)
-            Base.gc()
+            @testset "$(device[:name])" begin
+                ctx = cl.Context(device)
+                queue = cl.CmdQueue(ctx)
+                p = clfft.Plan(ComplexF32, ctx, X)
+                clfft.bake!(p, queue)
+                bufX = cl.Buffer(ComplexF32, ctx, :copy, hostbuf=X)
+                clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)
+                R = reshape(cl.read(queue, bufX), size(X))
+                @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
+                @test allclose_clfft(R, fftw_X)
+                GC.gc()
+            end
         end
     end
 end
