@@ -2,7 +2,7 @@ module api
 
 import OpenCL.cl
 
-depsfile = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
+depsfile = joinpath(dirname(@__FILE__), "..", "deps", "build.jl")
 if isfile(depsfile)
     include(depsfile)
 else
@@ -13,8 +13,9 @@ macro clfft(func, arg_types)
     local args_in  = Symbol[Symbol("arg$i::$T")
                             for (i, T) in enumerate(arg_types.args)]
     local funcname = Symbol("clfft$func")
+    
     @eval begin
-        $(funcname)($(args_in...)) = ccall(($(string(funcname)), libCLFFT),
+        $(funcname)($(args_in...)) = ccall(($(string(funcname)), #=string(libCLFFT)=# "/usr/lib/x86_64-linux-gnu/libclFFT.so"),
                                                  cl.CL_int, #clfftStatus
                                                  $arg_types,
                                                  $(args_in...))

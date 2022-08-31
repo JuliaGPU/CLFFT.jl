@@ -7,8 +7,9 @@ libCLFFT = library_dependency("libCLFFT", aliases = libnames)
 version = "2.12.2"
 baseurl = "https://github.com/clMathLibraries/clFFT/releases/download/v$(version)/clFFT-$(version)-"
 
+
 # download a pre-compiled binary (built by GLFW)
-if is_windows()
+if Sys.iswindows()
     if Sys.ARCH == :x86_64
         uri = URI(baseurl * "Windows-x64.zip")
         basedir = joinpath(@__DIR__, "clFFT-$(version)-Windows-x64")
@@ -22,7 +23,7 @@ if is_windows()
     end
 end
 
-if is_linux()
+if Sys.islinux()
     provides(AptGet, "libclfft-dev", libCLFFT)
     if Sys.ARCH == :x86_64
         uri = URI(baseurl * "Linux-x64.tar.gz")
@@ -35,7 +36,7 @@ if is_linux()
     end
 end
 
-if is_apple()
+if Sys.isapple()
     using Homebrew
     provides(Homebrew.HB, "homebrew/core/clfft", libCLFFT, os = :Darwin)
 end

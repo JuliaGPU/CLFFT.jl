@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 
 if [[ :$LD_LIBRARY_PATH: == *:"/home/jake/opt/clFFT/build/library":* ]] ; then
 	echo "CLFFT LIBRARY ON PATH"
