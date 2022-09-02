@@ -4,9 +4,9 @@ using FFTW
 
 import OpenCL.cl
 
-#import Pkg; Pkg.activate(".")
+import Pkg; Pkg.activate(".")
 
-using CLFFT
+#using CLFFT
 const clfft = CLFFT
 
 
