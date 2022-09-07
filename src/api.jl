@@ -15,10 +15,6 @@ macro clfft(func, arg_types)
     local funcname = Symbol("clfft$func")
     
     @eval begin
-#=        $(funcname)($(args_in...)) = ccall(($(string(funcname)), #=string(libCLFFT)=# "/usr/lib/x86_64-linux-gnu/libclFFT.so"),
-                                                 cl.CL_int, #clfftStatus
-                                                 $arg_types,
-                                                 $(args_in...)) =#
         $(funcname)($(args_in...)) = ccall(($(string(funcname)), string(libCLFFT)),
                                                  cl.CL_int, 
                                                  $arg_types,
