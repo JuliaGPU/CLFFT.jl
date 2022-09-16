@@ -463,7 +463,7 @@ end
 
 
 context(p::Plan) = begin
-    res = Vector{cl.CL_context}(undef,0)
+    res = Vector{cl.CL_context}(undef,1)
     @check api.clfftGetPlanContext(p.id[1], res)
     return cl.Context(res[1])
 end
