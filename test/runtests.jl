@@ -4,11 +4,8 @@ using FFTW
 
 import OpenCL.cl
 
-#import Pkg; Pkg.activate(".")
-
 using CLFFT
 const clfft = CLFFT
-
 
 #macro throws_pred(ex) FactCheck.throws_pred(ex) end
 
