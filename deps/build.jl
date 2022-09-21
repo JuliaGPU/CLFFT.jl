@@ -1,43 +1,48 @@
-using BinDeps
-using Compat
+using BinaryProvider
+using InfoZIP
 
-@BinDeps.setup
-libnames = ["libCLFFT", "clFFT", "libclFFT"]
-libCLFFT = library_dependency("libCLFFT", aliases = libnames)
+if Sys.ARCH != :x86_64
+    error("Only 64 bits operational systems are supported with automatic build")
+end
+
+if Sys.islinux()
+    so_name = "Linux"
+elseif Sys.iswindows()
+    so_name = "Windows"
+else
+    error("Only Linux or Windows are supported with automatic build")
+end
+
+# Download and install binaries
 version = "2.12.2"
-baseurl = "https://github.com/clMathLibraries/clFFT/releases/download/v$(version)/clFFT-$(version)-"
+base_url = "https://github.com/clMathLibraries/clFFT/releases/download/v$(version)/clFFT-$(version)"
+tarball_dir = joinpath(@__DIR__, "downloads/")
 
-# download a pre-compiled binary (built by GLFW)
-if is_windows()
-    if Sys.ARCH == :x86_64
-        uri = URI(baseurl * "Windows-x64.zip")
-        basedir = joinpath(@__DIR__, "clFFT-$(version)-Windows-x64")
-        provides(
-            Binaries, uri,
-            libCLFFT, unpacked_dir = basedir,
-            installed_libpath = joinpath(basedir, "bin"), os = :Windows
-        )
-    else
-        error("Only 64 bits windows supported with automatic build")
-    end
+if Sys.islinux()
+    tarball_url = "$base_url-Linux-x64.tar.gz"
+    integrity_hash = "20c853aba91e725b2b946ea59d5e45791c163b096951e0812a5d1d72d9d6a7cb"
+    
+    download_verify_unpack(tarball_url, integrity_hash, tarball_dir; ignore_existence=true, verbose=true)
+
+    lib_dir = joinpath(tarball_dir, "clFFT-$(version)-Linux-x64/lib64")
+    libname = "libclFFT.so"
 end
 
-if is_linux()
-    provides(AptGet, "libclfft-dev", libCLFFT)
-    if Sys.ARCH == :x86_64
-        uri = URI(baseurl * "Linux-x64.tar.gz")
-        basedir = joinpath(@__DIR__, "clFFT-$(version)-Linux-x64")
-        provides(
-            Binaries, uri,
-            libCLFFT, unpacked_dir = basedir,
-            installed_libpath = joinpath(basedir, "lib64"), os = :Linux
-        )
-    end
+if Sys.iswindows()
+    tarball_url = "$base_url-Windows-x64.zip"
+    integrity_hash = "737ba79dba57e025e72586e06cb1b7906f40e6a4a1b0e390516aabc53546eb9c"
+    tarball_path = joinpath(tarball_dir, "clFFT-$(version)-Windows-x64.zip")
+
+    download_verify(tarball_url, integrity_hash, tarball_path; force=true, verbose=true)
+    InfoZIP.unzip(tarball_path, joinpath(tarball_dir))    
+
+    lib_dir = joinpath(tarball_dir, "clFFT-$(version)-Windows-x64/lib64/import/")
+    libname = "clFFT.lib"
 end
 
-if is_apple()
-    using Homebrew
-    provides(Homebrew.HB, "homebrew/core/clfft", libCLFFT, os = :Darwin)
-end
+products = Product[
+    LibraryProduct(lib_dir, libname, :libclfft)
+]
 
-@BinDeps.install Dict("libCLFFT" => "libCLFFT")
+# Write out a deps.jl file
+write_deps_file(joinpath(@__DIR__, "deps.jl"), products, verbose=true)
