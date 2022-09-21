@@ -1,6 +1,6 @@
 name = "CLFFT"
 uuid = "fe1fc2a7-b730-4eae-aba2-587af0173dc9"
-authors = ["Francisco Heron de Carvalho Junior <heron@dc.ufc.br>"]
+authors = []
 version = "0.1.0"
 
 [deps]
