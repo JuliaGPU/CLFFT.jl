@@ -148,7 +148,7 @@ end
                     R = reshape(cl.read(queue, bufX), size(X))
                     @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
                     @test allclose_clfft(R, fftw_X)
-                    Base.gc()
+                    GC.gc()
                 end
             end
         end
@@ -168,7 +168,8 @@ end
             R = reshape(cl.read(queue, bufX), size(X))
             @test allclose(R, fftw_X; rtol=1e-2, atol=1e-3)
             @test allclose_clfft(R, fftw_X)
-            Base.gc()
+            GC.gc()
+            
         end
     end
 end
