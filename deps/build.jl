@@ -5,11 +5,7 @@ if Sys.ARCH != :x86_64
     error("Only 64 bits operational systems are supported with automatic build")
 end
 
-if Sys.islinux()
-    so_name = "Linux"
-elseif Sys.iswindows()
-    so_name = "Windows"
-else
+if !Sys.islinux() && !Sys.iswindows()
     error("Only Linux or Windows are supported with automatic build")
 end
 
