@@ -6,7 +6,7 @@ depsfile = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
 if isfile(depsfile)
     include(depsfile)
 else
-    error("CLFFT not properly installed. Please run Pkg.build(\"CLFFT\") then restart Julia@@.")
+    error("CLFFT not properly installed. Please run Pkg.build(\"CLFFT\") then restart Julia.")
 end
 
 macro clfft(func, arg_types)
@@ -15,8 +15,8 @@ macro clfft(func, arg_types)
     local funcname = Symbol("clfft$func")
     
     @eval begin
-        $(funcname)($(args_in...)) = ccall(($(string(funcname)), libclfft),
-                                                 cl.CL_int, 
+        $(funcname)($(args_in...)) = ccall(($(string(funcname)), libCLFFT),
+                                                 cl.CL_int, #clfftStatus
                                                  $arg_types,
                                                  $(args_in...))
     end

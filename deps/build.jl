@@ -37,7 +37,7 @@ if Sys.iswindows()
 end
 
 products = Product[
-    LibraryProduct(lib_dir, libname, :libclfft)
+    LibraryProduct(lib_dir, libname, :libCLFFT)
 ]
 
 # Write out a deps.jl file
