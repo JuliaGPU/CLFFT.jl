@@ -1,6 +1,6 @@
 name = "CLFFT"
 uuid = "fe1fc2a7-b730-4eae-aba2-587af0173dc9"
-authors = []
+authors = ["jakebolewski <jakebolewski@gmail.com>"]
 version = "0.2.0"
 
 [deps]
