@@ -523,20 +523,4 @@ function enqueue_transform(p::Plan,
     return [cl.Event(e_id) for e_id in out_evts]
 end
 
-
-
-function __init__()
-    v = version()
-    d = api.SetupData(v.major, v.minor, v.patch, 0)
-    setup = Ref(d)
-    error = api.clfftSetup(setup)
-    if error != api.CLFFT_SUCCESS
-        error("Failed to setup CLFFT Library")
-    end
-    is_initialized[] = true
-    atexit() do
-        api.clfftTeardown()
-        is_initialized[] = false
-    end
-end
 end # module

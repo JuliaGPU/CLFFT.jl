@@ -1,13 +1,9 @@
 module api
 
 import OpenCL.cl
+import CLFFT_jll
 
-depsfile = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
-if isfile(depsfile)
-    include(depsfile)
-else
-    error("CLFFT not properly installed. Please run Pkg.build(\"CLFFT\") then restart Julia.")
-end
+libclfft = CLFFT_jll.libclfft
 
 macro clfft(func, arg_types)
     local args_in  = Symbol[Symbol("arg$i::$T")
@@ -15,7 +11,7 @@ macro clfft(func, arg_types)
     local funcname = Symbol("clfft$func")
     
     @eval begin
-        $(funcname)($(args_in...)) = ccall(($(string(funcname)), libCLFFT),
+        $(funcname)($(args_in...)) = ccall(($(string(funcname)), libclfft),
                                                  cl.CL_int, #clfftStatus
                                                  $arg_types,
                                                  $(args_in...))

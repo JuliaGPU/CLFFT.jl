@@ -5,6 +5,7 @@ version = "0.2.0"
 
 [deps]
 BinaryProvider = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
+CLFFT_jll = "3d56f106-398e-55cb-9b6b-0dced46c254c"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 InfoZIP = "f4508453-b816-52ab-a864-26fc7f6211fc"
