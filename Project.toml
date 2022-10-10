@@ -1,7 +1,7 @@
 name = "CLFFT"
 uuid = "fe1fc2a7-b730-4eae-aba2-587af0173dc9"
 authors = ["jakebolewski <jakebolewski@gmail.com>"]
-version = "0.2.0"
+version = "0.6.0"
 
 [deps]
 CLFFT_jll = "3d56f106-398e-55cb-9b6b-0dced46c254c"
