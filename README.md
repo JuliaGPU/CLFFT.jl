@@ -1,4 +1,4 @@
-# CLFFT
+# CLFFT.jl
 
 Julia bindings to clFFT library.
 
