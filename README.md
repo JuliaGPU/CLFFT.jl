@@ -1,12 +1,6 @@
 # CLFFT
 
-[gitlab-img]: https://gitlab.com/JuliaGPU/CLFFT.jl/badges/master/pipeline.svg
-[gitlab-url]: https://gitlab.com/JuliaGPU/CLFFT.jl/pipelines
-
-Julia bindings to clFFT library
-
-**WARNING:** Some functions in this package FAIL in tests and aren't considered stable. Please, familiarize yourself
-with [tests](https://github.com/JuliaGPU/CLFFT.jl/blob/master/test/runtests.jl) before using the package. 
+Julia bindings to clFFT library.
 
 ## Example
 
