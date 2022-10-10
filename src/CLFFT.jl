@@ -69,7 +69,7 @@ mutable struct Plan{T <: clfftNumber}
 
     function (::Type{Plan{T}})(plan::Array{PlanHandle, 1}) where {T<:clfftNumber}
         p = new{T}(plan)
-        finalizer(p, free)
+        finalizer(free, p)
         return p
     end
 end
@@ -363,7 +363,7 @@ end
 set_lengths!(p::Plan, dims::Dims) = begin
     ndim = length(dims)
     @assert ndim <= 3
-    nd = Vector{Csize_t}(ndim)
+    nd = Vector{Csize_t}(undef,ndim)
     for (i, d) in enumerate(dims)
         nd[i] = d
     end
@@ -374,7 +374,7 @@ end
 
 lengths(p::Plan) = begin
     d = dim(p)
-    res = Vector{Csize_t}(d)
+    res = Vector{Csize_t}(undef,d)
     @check api.clfftGetPlanLength(p.id[1], Int32(d), res)
     return map(Int, res)
 end
@@ -382,7 +382,7 @@ end
 
 instride(p::Plan) = begin
     d = dim(p)
-    res = Vector{Csize_t}(d)
+    res = Vector{Csize_t}(undef,d)
     @check api.clfftGetPlanInStride(p.id[1], Int32(d), res)
     return map(Int, res)
 end
@@ -399,7 +399,7 @@ end
 
 outstride(p::Plan) = begin
     d = dim(p)
-    res = Vector{Csize_t}(d)
+    res = Vector{Csize_t}(undef,d)
     @check api.clfftGetPlanOutStride(p.id[1], Int32(d), res)
     return map(Int, res)
 end
@@ -463,7 +463,7 @@ end
 
 
 context(p::Plan) = begin
-    res = Vector{cl.CL_context}(1)
+    res = Vector{cl.CL_context}(undef,1)
     @check api.clfftGetPlanContext(p.id[1], res)
     return cl.Context(res[1])
 end
@@ -504,7 +504,7 @@ function enqueue_transform(p::Plan,
         evt_ids = [evt.id for evt in wait_for]
     end
     nqueues = length(q_ids)
-    out_evts = Vector{cl.CL_event}(nqueues)
+    out_evts = Vector{cl.CL_event}(undef,nqueues)
     tmp_buffer = C_NULL
     if tmp != nothing
         tmp_buff_id = [tmp.id]
@@ -523,20 +523,4 @@ function enqueue_transform(p::Plan,
     return [cl.Event(e_id) for e_id in out_evts]
 end
 
-
-
-function __init__()
-    v = version()
-    d = api.SetupData(v.major, v.minor, v.patch, 0)
-    setup = Ref(d)
-    error = api.clfftSetup(setup)
-    if error != api.CLFFT_SUCCESS
-        error("Failed to setup CLFFT Library")
-    end
-    is_initialized[] = true
-    atexit() do
-        api.clfftTeardown()
-        is_initialized[] = false
-    end
-end
 end # module
