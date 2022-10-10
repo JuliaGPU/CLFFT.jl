@@ -14,7 +14,7 @@ with [tests](https://github.com/JuliaGPU/CLFFT.jl/blob/master/test/runtests.jl) 
 import OpenCL
 import CLFFT
 import FFTW
-import LinearAlgebra
+using LinearAlgebra
 
 const cl = OpenCL.cl
 const clfft = CLFFT
@@ -33,5 +33,5 @@ clfft.bake!(p, queue)
 clfft.enqueue_transform(p, :forward, [queue], bufX, nothing)  
 result = cl.read(queue, bufX)
 
-@assert isapprox(LinearAlgebra.norm(result - FFTW.fft(X)), zero(Float32))
+@assert isapprox(norm(result - FFTW.fft(X)), zero(Float32))
 ```
